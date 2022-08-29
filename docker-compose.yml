@@ -1,7 +1,12 @@
 version: '3.8'
 
+networks:
+  hie:
+    driver: bridge
+
 services:
-  ### 
+
+  ###
   # Traefik Reverse Proxy
   ###
   traefik:
@@ -21,29 +26,34 @@ services:
       - 'traefik.http.routers.api.service=api@internal'
       - 'traefik.http.routers.api.tls=true'
       - 'traefik.http.routers.api.entrypoints=web-secure'
-      - 'traefik.http.routers.api.middlewares=api'      
+      - 'traefik.http.routers.api.middlewares=api'
       - 'traefik.http.middlewares.api.stripprefix.prefixes=/traefik'
       - 'traefik.http.middlewares.api.stripprefix.forceSlash=false'
+
   sigdep3:
-    image: partnersinhealth/openmrs-server:latest
+    build: ./configs/sigdep3
+    depends_on:
+      db:
+        condition: service_healthy
     environment:
       OMRS_CONFIG_CONNECTION_SERVER: "db"
       OMRS_CONFIG_CONNECTION_ROOT_PASSWORD: "root"
       OMRS_CONFIG_CONNECTION_USERNAME: "root"
       OMRS_CONFIG_CONNECTION_PASSWORD: "root"
       OMRS_CONFIG_CONNECTION_EXTRA_ARGS: "&autoReconnect=true&sessionVariables=default_storage_engine%3DInnoDB&useUnicode=true&characterEncoding=UTF-8&useSSL=false&requireSSL=false"
-      OMRS_CONFIG_AUTO_UPDATE_DATABASE: "true"
-      OMRS_CONFIG_CREATE_TABLES: "true"
-      OMRS_CONFIG_HAS_CURRENT_OPENMRS_DATABASE: "false"
+      OMRS_CONFIG_AUTO_UPDATE_DATABASE: "false"
+      OMRS_CONFIG_CREATE_TABLES: "false"
+      OMRS_CONFIG_HAS_CURRENT_OPENMRS_DATABASE: "true"
       OMRS_DEV_DEBUG_PORT: "1044"
     volumes:
-      - ./configs/sigdep3:/openmrs/distribution
       - /openmrs/data
     ports:
+      - "8081:8080"
       - "1044:1044"
-    
+
   db:
-    image: library/mysql:8
+    platform: linux/amd64
+    image: library/mysql:5.6
     command: "mysqld \
               --character-set-server=utf8 \
               --collation-server=utf8_general_ci \
@@ -53,13 +63,18 @@ services:
     environment:
       MYSQL_DATABASE: "openmrs"
       MYSQL_ROOT_PASSWORD: "root"
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
     volumes:
-      - mysql-data:/var/lib/mysql
+      - ./mysql-data:/var/lib/mysql
+      - ./configs/sigdep3/db/sans_les_données.sql:/docker-entrypoint-initdb.d/0_init.sql
     ports:
       - "3306:3306"
-      
+
   ###
-  # OpenHIM 
+  # OpenHIM
   ###
   openhim-core:
     container_name: openhim-core
@@ -82,24 +97,24 @@ services:
     labels:
       - 'traefik.enable=true'
       - 'traefik.docker.network=ci-hie-demo_hie'
-      
+
       - 'traefik.http.services.openhim-api.loadbalancer.server.port=8080'
       - 'traefik.http.services.openhim-api.loadbalancer.server.scheme=https'
       - 'traefik.http.routers.openhim-api.service=openhim-api'
       - 'traefik.http.routers.openhim-api.tls=true'
       - 'traefik.http.routers.openhim-api.entrypoints=web-secure'
       - 'traefik.http.routers.openhim-api.rule=PathPrefix(`/openhim-api`)'
-      - 'traefik.http.routers.openhim-api.middlewares=openhim-api'      
+      - 'traefik.http.routers.openhim-api.middlewares=openhim-api'
       - 'traefik.http.middlewares.openhim-api.stripprefix.prefixes=/openhim-api'
       - 'traefik.http.middlewares.openhim-api.stripprefix.forceSlash=false'
-      
+
       - 'traefik.http.services.openhim-http.loadbalancer.server.port=5000'
       - 'traefik.http.services.openhim-http.loadbalancer.server.scheme=https'
       - 'traefik.http.routers.openhim-http.service=openhim-http'
       - 'traefik.http.routers.openhim-http.tls=true'
       - 'traefik.http.routers.openhim-http.entrypoints=web-secure'
       - 'traefik.http.routers.openhim-http.rule=PathPrefix(`/openhim-http`)'
-      - 'traefik.http.routers.openhim-http.middlewares=openhim-http'      
+      - 'traefik.http.routers.openhim-http.middlewares=openhim-http'
       - 'traefik.http.middlewares.openhim-http.stripprefix.prefixes=/openhim-http'
       - 'traefik.http.middlewares.openhim-http.stripprefix.forceSlash=false'
 
@@ -109,7 +124,7 @@ services:
       - 'traefik.http.routers.openhim-ssl.tls=true'
       - 'traefik.http.routers.openhim-ssl.entrypoints=web-secure'
       - 'traefik.http.routers.openhim-ssl.rule=PathPrefix(`/openhim-ssl`)'
-      - 'traefik.http.routers.openhim-ssl.middlewares=openhim-ssl'      
+      - 'traefik.http.routers.openhim-ssl.middlewares=openhim-ssl'
       - 'traefik.http.middlewares.openhim-ssl.stripprefix.prefixes=/openhim-ssl'
       - 'traefik.http.middlewares.openhim-ssl.stripprefix.forceSlash=false'
 
@@ -118,6 +133,8 @@ services:
     hostname: openhim-console
     image: jembi/openhim-console:latest
     restart: unless-stopped
+    ports:
+      - "81:80"
     volumes:
       - ./configs/openhim-console/default.json:/usr/share/nginx/html/config/default.json
     healthcheck:
@@ -131,7 +148,7 @@ services:
       - 'traefik.http.routers.openhim-console.tls=true'
       - 'traefik.http.routers.openhim-console.entrypoints=web-secure'
       - 'traefik.http.routers.openhim-console.rule=PathPrefix(`/openhim`)'
-      - 'traefik.http.routers.openhim-console.middlewares=openhim-console'      
+      - 'traefik.http.routers.openhim-console.middlewares=openhim-console'
       - 'traefik.http.middlewares.openhim-console.stripprefix.prefixes=/openhim'
       - 'traefik.http.middlewares.openhim-console.stripprefix.forceSlash=false'
     networks:
@@ -150,7 +167,7 @@ services:
     container_name: mongo-db
     image: mongo:3.4
     volumes:
-      - /data/db"
+      - /data/db
     restart: unless-stopped
     networks:
       - hie
@@ -159,10 +176,16 @@ services:
   # OpenCR - Client Registry
   ###
   opencr:
+    platform: linux/amd64
     container_name: opencr
     hostname: opencr
     image: intrahealth/opencr:latest
     restart: unless-stopped
+    depends_on:
+      - es
+      - opencr-fhir
+    ports:
+      - "3000:3000"
     environment:
       - NODE_ENV=docker
       - HAPI_FHIR_URL=http://opencr-fhir:8080/fhir/metadata
@@ -178,7 +201,7 @@ services:
       - 'traefik.http.routers.opencr.entrypoints=web-secure'
       - 'traefik.http.services.opencr.loadbalancer.server.port=3000'
       - 'traefik.http.routers.opencr.rule=PathPrefix(`/opencr`)'
-      - 'traefik.http.routers.opencr.middlewares=opencr'      
+      - 'traefik.http.routers.opencr.middlewares=opencr'
       - 'traefik.http.middlewares.opencr.stripprefix.prefixes=/opencr'
       - 'traefik.http.middlewares.opencr.stripprefix.forceSlash=false'
   
@@ -195,9 +218,9 @@ services:
       timeout: 30s
       retries: 3
     ports:
-      - 8082:8080
+      - "8082:8080"
     volumes:
-      - cr-data:/data/hapi
+      - ./cr-data:/data/hapi
 
   es:
     container_name: es
@@ -213,9 +236,11 @@ services:
       memlock:
         soft: -1
         hard: -1
+    ports:
+      - "9200:9200"
     volumes:
-      - es:/usr/share/elasticsearch/data
+      - ./es:/usr/share/elasticsearch/data
     networks:
       - hie
     healthcheck:
-      test: "curl --silent --fail http://localhost:9200/_cluster/health || exit 1"
+      test: "curl --silent --fail http://es:9200/_cluster/health || exit 1"
