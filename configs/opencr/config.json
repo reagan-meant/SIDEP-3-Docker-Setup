@@ -55,13 +55,16 @@
   "systems": {
     "CRBaseURI": "http://openclientregistry.org/fhir",
     "internalid": {
-      "uri": [
-        "http://clientregistry.org/openmrs"
-      ],
+      "uri": "http://clientregistry.org/openmrs",
       "displayName": "Internal ID"
     },
-    "openmrs": {
-      "uri": "http://clientregistry.org/openmrs"
+    "art": {
+      "uri": "http://clientregistry.org/artnumber",
+      "displayName": "ART ID"
+    },
+    "upi": {
+      "uri": "http://cote.divore/ext/identifier/UPI",
+      "displayName": "UPID"
     },
     "lims": {
       "uri": "http://clientregistry.org/lims"
@@ -75,7 +78,7 @@
     }
   },
   "sync": {
-    "lastFHIR2ESSync": "2022-09-20T20:40:14"
+    "lastFHIR2ESSync": "2022-12-07T22:42:27"
   },
   "__comments": {
     "matching.tool": "this tells if the app should use mediator algorithms or elasticsearch algorithms for matching, two options mediator and elasticsearch"
