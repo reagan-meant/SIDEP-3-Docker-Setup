@@ -44,4 +44,4 @@ docker compose up -d
 | OpenCR    | http://localhost:3000/crux  |  root@intrahealth.org  : intrahealth|
 
 ### Possible challenges
-Ensure the .db file at the root has permissions to allow docker to write files
+Ensure the .db folder at the root has permissions to allow docker to write files
