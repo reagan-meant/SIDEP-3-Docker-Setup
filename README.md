@@ -38,10 +38,10 @@ docker compose up -d
 ### You should be able to acces the Sigdep (OpenMRS) ,OpenHIM and Hapi-Fhir instances  at the following urls
 | Instance  |     URL       | credentials (user : password)|
 |---------- |:-------------:|------:                       |
-| Sigdep (OpenMRS)   | http://localhost:8080/openmrs%7C admin : Dppeis@pnls_16 |
+| Sigdep (OpenMRS)   | http://localhost:8080/openmrs  |  admin : Dppeis@pnls_16 |
 | OpenHIM   | http://localhost:9000  |  root@openhim.org : openhim |
 | Hapi FHir | http://localhost:8090 |    hapi : hapi123| 
-| OpenCR    | http://localhost:3000/crux%7C  root@intrahealth.org  : intrahealth|
+| OpenCR    | http://localhost:3000/crux  |  root@intrahealth.org  : intrahealth|
 
 ### Possible challenges
 Ensure the .db file at the root has permissions to allow docker to write files
