@@ -42,6 +42,8 @@ docker compose up -d
 | OpenHIM   | http://localhost:9000  |  root@openhim.org : openhim |
 | Hapi FHir | http://localhost:8090 |    hapi : hapi123| 
 | OpenCR    | http://localhost:3000/crux  |  root@intrahealth.org  : intrahealth|
+| OpenELIS | https://localhost/OpenELIS-Global/ |    admin : adminADMIN!| 
+
 
 ### Possible challenges
 Ensure the .db folder at the root has permissions to allow docker to write files
