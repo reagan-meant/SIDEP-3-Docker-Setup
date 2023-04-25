@@ -162,13 +162,14 @@
 							{fieldName:"age", header:omsgs.age},
 							{fieldName:"gender", header:omsgs.gender},
 							{fieldName:"birthdateString", header:omsgs.birthdate},
-							{fieldName:"deathDateString", header:omsgs.deathdate}
+							{fieldName:"deathDateString", header:omsgs.deathdate},
+							{fieldName:"patientPresent", header:omsgs.action}
 						],
 						{
                             searchLabel: '<openmrs:message code="Patient.searchBox" javaScriptEscape="true"/>',
                             searchPlaceholder:'<openmrs:message code="Patient.searchBox.placeholder" javaScriptEscape="true"/>',
                             attributes: [
-                                     	<c:forEach var="attribute" items="${fn:split(attributesToList, ',')}" varStatus="varStatus">
+							<c:forEach var="attribute" items="${fn:split(attributesToList, ',')}" varStatus="varStatus">
                                            <c:if test="${fn:trim(attribute) != ''}">
                                            <c:set var="attributeName" value="${fn:trim(attribute)}" />
                                 			     <c:choose>
@@ -196,7 +197,11 @@
 				});
 
 				function doSelectionHandler(index, data) {
-					document.location = "${model.postURL}?patientId=" + data.patientId + "&phrase=" + lastSearch;
+					if(data.patientPresent == "Import"){
+						//Add the action directly on the button
+					}else{
+						document.location = "${model.postURL}?patientId=" + data.patientId + "&phrase=" + lastSearch;
+					}
 				}
 
 				//searchHandler for the Search widget

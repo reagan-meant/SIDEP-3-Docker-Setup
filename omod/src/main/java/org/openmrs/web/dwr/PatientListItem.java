@@ -28,6 +28,8 @@ public class PatientListItem extends PersonListItem {
 	
 	private String otherIdentifiers = "";
 	
+	private String patientPresent = "";
+	
 	public PatientListItem() {
 	}
 	
@@ -112,6 +114,20 @@ public class PatientListItem extends PersonListItem {
 	 */
 	public String getIdentifierTypeName() {
 		return identifierTypeName;
+	}
+	
+	/**
+	 * @param patientPresent the patientPresent to set
+	 */
+	public void setPatientPresent(String patientPresent) {
+		this.patientPresent = patientPresent;
+	}
+	
+	/**
+	 * @return the patientPresent
+	 */
+	public String getPatientPresent() {
+		return patientPresent;
 	}
 	
 }

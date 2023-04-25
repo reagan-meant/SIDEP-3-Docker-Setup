@@ -841,7 +841,10 @@ function OpenmrsSearch(div, showIncludeVoided, searchHandler, selectionHandler, 
                 var data = rowData[c.fieldName];
                 if(data == null)
                     data = " ";
+                if(c.fieldName == "patientPresent" && data == "Import")
+                	//Add the action directly on the button here
 
+                    data = "<Button>Import</Button>";
                 return data;
             });
 

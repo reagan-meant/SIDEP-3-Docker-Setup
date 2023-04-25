@@ -119,6 +119,7 @@ public class DWRPatientService implements GlobalPropertyListener {
 		patientList = new Vector<Object>(patients.size());
 		for (Patient p : patients) {
 			PatientListItem PatientLI = new PatientListItem(p, searchValue);
+			PatientLI.setPatientPresent("Import");
 			PatientListItem htmlSafePatientLI = PatientLI;
 			htmlSafePatientLI.setGivenName(WebUtil.escapeHTML(PatientLI.getGivenName()));
 			htmlSafePatientLI.setFamilyName(WebUtil.escapeHTML(PatientLI.getFamilyName()));
