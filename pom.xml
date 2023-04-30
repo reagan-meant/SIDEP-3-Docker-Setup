@@ -54,6 +54,8 @@
 		<openmrsPlatformVersion>2.0.0</openmrsPlatformVersion>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javaCompilerVersion>1.8</javaCompilerVersion>
+		<hapifhirVersion>5.4.0</hapifhirVersion>
+
 	</properties>
 
 	<dependencyManagement>
