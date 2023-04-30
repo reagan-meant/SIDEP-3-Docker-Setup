@@ -47,3 +47,11 @@ docker compose up -d
 
 ### Possible challenges
 Ensure the .db folder at the root has permissions to allow docker to write files
+
+###
+Running on gitpod
+Change the env var of es to have only 
+`      - xpack.security.enabled=false
+        - discovery.type=single-node
+`
+Follow the blog here: https://www.gitpod.io/blog/local-app to enable localhost on your machine
