@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Vector;
 
@@ -24,9 +25,13 @@ import org.openmrs.Concept;
 import org.openmrs.GlobalProperty;
 import org.openmrs.Location;
 import org.openmrs.Patient;
+import org.openmrs.User;
+import org.apache.commons.lang.StringUtils;
+
 import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonAddress;
+import org.openmrs.PersonName;
 import org.openmrs.api.APIAuthenticationException;
 import org.openmrs.api.APIException;
 import org.openmrs.api.ConceptService;
@@ -44,7 +49,9 @@ import org.openmrs.module.legacyui.api.LegacyUIService;
 import org.openmrs.patient.IdentifierValidator;
 import org.openmrs.patient.UnallowedIdentifierException;
 import org.openmrs.util.OpenmrsConstants;
+import org.openmrs.validator.PatientIdentifierValidator;
 import org.openmrs.web.WebUtil;
+import org.springframework.validation.BindException;
 
 /**
  * DWR patient methods. The methods in here are used in the webapp to get data from the database via
@@ -662,6 +669,89 @@ public class DWRPatientService implements GlobalPropertyListener {
 	@Override
 	public void globalPropertyDeleted(String propertyName) {
 		setMaximumResults(OpenmrsConstants.GLOBAL_PROPERTY_PERSON_SEARCH_MAX_RESULTS_DEFAULT_VALUE);
+	}
+	
+	public String createPatient(String identifier, String givenName, String middleName, String familyName, String age,
+	        String gender, String birthdateString, String deathDateString) throws ParseException {
+		System.out.println("I was acutally called");
+		//1232/12/12/12343 Broom Broom 44 F 1 janv. 1979 null
+		System.out.println(identifier + givenName + middleName + familyName + age + gender + birthdateString
+		        + deathDateString);
+		
+		User user = Context.getAuthenticatedUser();
+		Patient p = new Patient();
+		p.setPersonCreator(user);
+		p.setPersonDateCreated(new Date());
+		p.setPersonChangedBy(user);
+		p.setPersonDateChanged(new Date());
+		if (StringUtils.isEmpty(gender)) {
+			log.error("Gender cannot be null.");
+			return String.valueOf("Gender cannot be null.");
+		} else if (gender.toUpperCase().contains("M")) {
+			p.setGender("M");
+		} else if (gender.toUpperCase().contains("F")) {
+			p.setGender("F");
+		} else {
+			log.error("Gender must be 'M' or 'F'.");
+			return new String("Gender must be 'M' or 'F'.");
+		}
+		if ("".equals(givenName) || "".equals(familyName)) {
+			log.error("Given name and family name cannot be null.");
+			return new String("Given name and family name cannot be null.");
+		}
+		PersonName name = new PersonName(givenName, middleName, familyName);
+		name.setCreator(user);
+		name.setDateCreated(new Date());
+		name.setChangedBy(user);
+		name.setDateChanged(new Date());
+		p.addName(name);
+		p.setBirthdate(StringToDateFr(birthdateString));
+		/* try {
+			Date d = updateAge(birthdate, dateformat, age);
+			p.setBirthdate(d);
+		} 
+		catch (java.text.ParseException pe) {
+			log.error(pe);
+			return new String("Birthdate cannot be parsed.");
+		}
+		*/
+		p.setGender(gender);
+		PatientIdentifier pi = new PatientIdentifier();
+		pi.setIdentifier(identifier);
+		//legacyui.hapiIdTypeUUIDmap
+		PatientService ps = Context.getPatientService();
+		LocationService ls = Context.getLocationService();
+		
+		pi.setIdentifierType(ps.getPatientIdentifierTypeByUuid(Context.getAdministrationService().getGlobalProperty(
+		    "legacyui.hapiIdTypeUUIDmap")));
+		pi.setLocation(ls.getDefaultLocation());
+		pi.setPreferred(true);
+		
+		BindException piErrors = new BindException(pi, "patientIdentifier");
+		new PatientIdentifierValidator().validate(pi, piErrors);
+		if (piErrors.hasErrors()) {
+			System.out.println("I was insidee hereeeee called");
+			System.out.println(piErrors.getMessage());
+			
+			//errors.rejectValue("identifiers", piErrors.getMessage());
+			//return new String(piErrors.getMessage());
+			return new String("Failed to add ID to patient with possible duplicate");
+			
+		}
+		p.addIdentifier(pi);
+		
+		Patient patient = Context.getPatientService().savePatient(p);
+		return "success";
+		
+	}
+	
+	public Date StringToDateFr(String dateString) throws ParseException {
+		String dateString1 = "1 jan. 1979";
+		Locale frenchLocale = new Locale("fr");
+		SimpleDateFormat formatter = new SimpleDateFormat("dd MMM yyyy");
+		Date date = formatter.parse(dateString1.replaceAll("\\.", ""));
+		System.out.println(date);
+		return date;
 	}
 	
 	/**

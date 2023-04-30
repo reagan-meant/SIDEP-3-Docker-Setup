@@ -150,10 +150,28 @@
 			<openmrs:htmlInclude file="/scripts/jquery-ui/js/openmrsSearch.js" />
 
 			<openmrs:globalProperty key="patient.listingAttributeTypes" var="attributesToList"/>
-			
+
 			<script type="text/javascript">
 				var lastSearch;
+				var selectPatientIdentifier;
 				$j(document).ready(function() {
+					$j('#mergePatientPopup').dialog({
+							title: '<openmrs:message code="Patient.merge.title"/>',
+							autoOpen: false,
+							draggable: false,
+							resizable: false,
+							width: '95%',
+							modal: true,
+							open: function(a, b) { $j('#mergePatientPopupLoading').show(); }
+					});
+				$j("#mergePatientPopupIframe").load(function() { $j('#mergePatientPopupLoading').hide(); });
+
+				function showMergePatientPopup() {
+					$j('#mergePatientPopup')
+						.dialog('option', 'height', $j(window).height() - 50) 
+						.dialog('open');
+					return true;
+				}
 					new OpenmrsSearch("findPatients", false, doPatientSearch, doSelectionHandler,
 						[	{fieldName:"identifier", header:omsgs.identifier},
 							{fieldName:"givenName", header:omsgs.givenName},
@@ -196,9 +214,70 @@
 
 				});
 
+				function handleSaveResults(result) {
+					// This method will be called by DWR with the search results
+					// Do something with the search results here, such as displaying them on the page
+					console.log("Search results:", result);
+					if (result == "success"){
+						document.location = "${model.postURL}?patientId=" + selectPatientIdentifier + "&phrase=" + lastSearch;
+
+					} else {
+						alert("Error: " + result);
+
+					}
+				}
 				function doSelectionHandler(index, data) {
 					if(data.patientPresent == "Import"){
 						//Add the action directly on the button
+						selectPatientIdentifier = data.identifier;
+						var dialogData = {
+							name: "John",
+							age: 25,
+							gender: "Male"
+							};
+
+
+						var $jdialog = $j("<div>").dialog({
+							title: '<openmrs:message code="legacyui.patient.import"/>',
+							autoOpen: false,
+							modal: true,
+							buttons: {
+								"Save": function() {
+								// Code to save changes goes here
+								$j(this).dialog("close");
+								console.log("my data is here");
+
+								console.log(data);
+								//DWRPatientService.createPatient(data.identifier, data.givenName, data.middleName, data.familyName, data.age, data.gender, data.birthdateString, data.deathDateString);
+								DWRPatientService.createPatient("6564/12/12/56729", "se", data.middleName, data.familyName, data.age, data.gender, data.birthdateString, data.deathDateString, handleSaveResults);
+
+								//document.location = "${model.postURL}?patientId=" + data.identifier + "&phrase=" + lastSearch;
+
+								},
+								"Cancel": function() {
+									$j(this).dialog("close");
+								}
+							}
+							});
+							/* $jdialog.dialog("option", "dialogData", dialogData);
+
+							$jdialog.dialog({
+								open: function(event, ui) {
+									var dialogData = $j(this).dialog("option", "dialogData");
+									console.log(dialogData.name); // outputs "John"
+									console.log(dialogData.age); // outputs 25
+									console.log(dialogData.gender); // outputs "Male"
+								}
+								}); */
+
+								$jdialog.html("<p>givenName: " + data.givenName + "</p>" +
+									"<p>identifier: " + data.identifier + "</p>" +
+									"<p>familyName: " + data.familyName + "</p>" +
+									"<p>birthdateString: " + data.birthdateString + "</p>" +
+									"<p>patientPresent: " + data.patientPresent + "</p>" +
+									"<p>Gender: " + data.gender + "</p>");
+							$jdialog.dialog("open");
+
 					}else{
 						document.location = "${model.postURL}?patientId=" + data.patientId + "&phrase=" + lastSearch;
 					}
@@ -209,7 +288,7 @@
 					lastSearch = text;
 					DWRPatientService.findCountAndPatients(text, opts.start, opts.length, getMatchCount, resultHandler);
 				}
-
+			
 			</script>
 
 			<div>
@@ -217,6 +296,11 @@
 				<div class="box">
 					<div class="searchWidgetContainer" id="findPatients"></div>
 				</div>
+			</div>
+
+			<div id="mergePatientPopup">
+				<div id="mergePatientPopupLoading"><openmrs:message code="general.loading"/></div>
+				<iframe id="mergePatientPopupIframe" name="mergePatientPopupIframe" width="100%" height="100%" marginWidth="0" marginHeight="0" frameBorder="0" scrolling="auto"></iframe>
 			</div>
 
 			<c:if test="${empty model.hideAddNewPatient}">
