@@ -27,6 +27,9 @@ import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.User;
 import org.apache.commons.lang.StringUtils;
+import java.util.stream.Collectors;
+import org.hl7.fhir.r4.model.Bundle;
+import ca.uhn.fhir.rest.client.api.IGenericClient;
 
 import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
@@ -52,6 +55,7 @@ import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.validator.PatientIdentifierValidator;
 import org.openmrs.web.WebUtil;
 import org.springframework.validation.BindException;
+import org.openmrs.module.legacyui.FhirLegacyUIConfig;
 
 /**
  * DWR patient methods. The methods in here are used in the webapp to get data from the database via
@@ -75,13 +79,14 @@ public class DWRPatientService implements GlobalPropertyListener {
 	 * @should return only patient list items with nonnumeric search
 	 * @should return string warning if invalid patient identifier
 	 * @should not return string warning if searching with valid identifier
+	 * @throws Exception
 	 * @should include string in results if doing extra decapitated search
 	 * @should not return duplicate patient list items if doing decapitated search
 	 * @should not do decapitated search if numbers are in the search string
 	 * @should get results for patients that have edited themselves
 	 * @should logged in user should load their own patient object
 	 */
-	public Collection<Object> findPatients(String searchValue, boolean includeVoided) {
+	public Collection<Object> findPatients(String searchValue, boolean includeVoided) throws Exception {
 		return findBatchOfPatients(searchValue, includeVoided, null, null);
 	}
 	
@@ -99,9 +104,10 @@ public class DWRPatientService implements GlobalPropertyListener {
 	 * @param start The starting index for the results to return
 	 * @param length The number of results of return
 	 * @return Collection&lt;Object&gt; of PatientListItem or String
+	 * @throws Exception
 	 * @since 1.8
 	 */
-	public Collection<Object> findBatchOfPatients(String searchValue, boolean includeVoided, Integer start, Integer length) {
+	public Collection<Object> findBatchOfPatients(String searchValue, boolean includeVoided, Integer start, Integer length) throws Exception {
 		if (maximumResults == null) {
 			setMaximumResults(getMaximumSearchResults());
 		}
@@ -123,6 +129,25 @@ public class DWRPatientService implements GlobalPropertyListener {
 			return patientList;
 		}
 		
+		IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
+		List<org.hl7.fhir.r4.model.Patient> mypatients = client
+	 .search()
+	 .forResource(org.hl7.fhir.r4.model.Patient.class)
+	 .where(org.hl7.fhir.r4.model.Patient.NAME.matches().value(searchValue))
+	 .returnBundle(Bundle.class)
+	 .execute()
+	 .getEntry()
+	 .stream()
+	 .map(e -> (org.hl7.fhir.r4.model.Patient) e.getResource())
+	 .collect(Collectors.toList());
+	 System.out.println(mypatients.size());
+	 System.out.println("mypatients.size()");
+
+	 for (org.hl7.fhir.r4.model.Patient patient : mypatients) {
+		 System.out.println(patient.getIdentifier());
+		 System.out.println(patient.getGender());
+
+	 }
 		patientList = new Vector<Object>(patients.size());
 		for (Patient p : patients) {
 			PatientListItem PatientLI = new PatientListItem(p, searchValue);
