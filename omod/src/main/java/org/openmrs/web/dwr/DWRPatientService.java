@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Vector;
+import java.time.Period;
+import java.time.LocalDate;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -56,6 +58,7 @@ import org.openmrs.validator.PatientIdentifierValidator;
 import org.openmrs.web.WebUtil;
 import org.springframework.validation.BindException;
 import org.openmrs.module.legacyui.FhirLegacyUIConfig;
+import org.openmrs.module.legacyui.LegacyUIConstants;
 
 /**
  * DWR patient methods. The methods in here are used in the webapp to get data from the database via
@@ -131,27 +134,105 @@ public class DWRPatientService implements GlobalPropertyListener {
 		
 		IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
 		List<org.hl7.fhir.r4.model.Patient> mypatients = client
-	 .search()
-	 .forResource(org.hl7.fhir.r4.model.Patient.class)
-	 .where(org.hl7.fhir.r4.model.Patient.NAME.matches().value(searchValue))
-	 .returnBundle(Bundle.class)
-	 .execute()
-	 .getEntry()
-	 .stream()
-	 .map(e -> (org.hl7.fhir.r4.model.Patient) e.getResource())
-	 .collect(Collectors.toList());
+			.search()
+			.forResource(org.hl7.fhir.r4.model.Patient.class)
+			.where(org.hl7.fhir.r4.model.Patient.NAME.matches().value(searchValue))
+			.returnBundle(Bundle.class)
+			.execute()
+			.getEntry()
+			.stream()
+			.map(e -> (org.hl7.fhir.r4.model.Patient) e.getResource())
+			.collect(Collectors.toList());
+			
+			List<org.hl7.fhir.r4.model.Patient> mypatientsByID = client
+			.search()
+			.forResource(org.hl7.fhir.r4.model.Patient.class)
+//			.where(org.hl7.fhir.r4.model.Patient.IDENTIFIER.exactly().systemAndIdentifier(LegacyUIConstants.CLIENT_REGISTRY_INTERNAL_ID_SYSTEM, searchValue))
+			.where(org.hl7.fhir.r4.model.Patient.IDENTIFIER.exactly().systemAndIdentifier("http://clientregistry.org/artnumber", searchValue))
+			.returnBundle(Bundle.class)
+			.execute()
+			.getEntry()
+			.stream()
+			.map(e -> (org.hl7.fhir.r4.model.Patient) e.getResource())
+			.collect(Collectors.toList());
+			mypatients.addAll(mypatientsByID);
+
 	 System.out.println(mypatients.size());
 	 System.out.println("mypatients.size()");
+	 patientList = new Vector<Object>(patients.size() + mypatients.size());
 
-	 for (org.hl7.fhir.r4.model.Patient patient : mypatients) {
-		 System.out.println(patient.getIdentifier());
-		 System.out.println(patient.getGender());
+	 for (org.hl7.fhir.r4.model.Patient fhirPatient : mypatients) {
+		 PatientListItem PatientLI = new PatientListItem();
 
+		         // Set patient identifier
+		PatientLI.setIdentifier(fhirPatient.getIdentifierFirstRep().getValue());
+
+		        // Set patient name
+				//PatientLI.setGivenName(fhirPatient.getNameFirstRep().getGivenAsSingleString());
+				//PatientLI.setFamilyName(fhirPatient.getNameFirstRep().getFamily());
+				List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();
+				if (!givenNames.isEmpty()) {
+					PatientLI.setGivenName(WebUtil.escapeHTML(givenNames.get(0).getValue()));
+					//PatientLI.setGivenName(WebUtil.escapeHTML(fhirPatient.getNameFirstRep().getGivenAsSingleString()));
+
+					StringBuilder sb = new StringBuilder();
+					for (int i = 1; i < givenNames.size(); i++) {
+						sb.append(givenNames.get(i).getValue()).append(" ");
+					}
+					
+					if (sb.length() > 0) {
+						sb.deleteCharAt(sb.length() - 1);
+					}
+					
+					PatientLI.setMiddleName(WebUtil.escapeHTML(sb.toString()));
+
+				}
+
+				PatientLI.setFamilyName(WebUtil.escapeHTML(fhirPatient.getNameFirstRep().getFamily()));
+				// Set patient date of birth
+				if (fhirPatient.hasBirthDate()) {
+					PatientLI.setBirthdate(fhirPatient.getBirthDate());
+					PatientLI.setBirthdateString(WebUtil.formatDate(fhirPatient.getBirthDate()));
+				}
+				
+				switch (fhirPatient.getBirthDateElement().getPrecision()) {
+					case DAY:
+					PatientLI.setBirthdateEstimated(false);
+						break;
+					case MONTH:
+					case YEAR:
+					PatientLI.setBirthdateEstimated(true);
+						break;
+				}
+				// Set patient Age
+				LocalDate today = LocalDate.now();
+				LocalDate localBirthDate = fhirPatient.getBirthDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+				Period period = Period.between(localBirthDate, today);
+				PatientLI.setAge(period.getYears());
+
+				 // Set patient gender
+				 if (fhirPatient.hasGender()) {
+					switch (fhirPatient.getGender()) {
+						case MALE:
+							PatientLI.setGender("M");
+							break;
+						case FEMALE:
+							PatientLI.setGender("F");
+							break;
+						case OTHER:
+							PatientLI.setGender("O");
+							break;
+						case UNKNOWN:
+							PatientLI.setGender("U");
+							break;
+					}
+				}
+				//Tag for patient from HAPI
+				PatientLI.setPatientPresent("Import");
+				patientList.add(PatientLI);
 	 }
-		patientList = new Vector<Object>(patients.size());
 		for (Patient p : patients) {
 			PatientListItem PatientLI = new PatientListItem(p, searchValue);
-			PatientLI.setPatientPresent("Import");
 			PatientListItem htmlSafePatientLI = PatientLI;
 			htmlSafePatientLI.setGivenName(WebUtil.escapeHTML(PatientLI.getGivenName()));
 			htmlSafePatientLI.setFamilyName(WebUtil.escapeHTML(PatientLI.getFamilyName()));
@@ -698,7 +779,6 @@ public class DWRPatientService implements GlobalPropertyListener {
 	
 	public String createPatient(String identifier, String givenName, String middleName, String familyName, String age,
 	        String gender, String birthdateString, String deathDateString) throws ParseException {
-		System.out.println("I was acutally called");
 		//1232/12/12/12343 Broom Broom 44 F 1 janv. 1979 null
 		System.out.println(identifier + givenName + middleName + familyName + age + gender + birthdateString
 		        + deathDateString);
@@ -755,9 +835,6 @@ public class DWRPatientService implements GlobalPropertyListener {
 		BindException piErrors = new BindException(pi, "patientIdentifier");
 		new PatientIdentifierValidator().validate(pi, piErrors);
 		if (piErrors.hasErrors()) {
-			System.out.println("I was insidee hereeeee called");
-			System.out.println(piErrors.getMessage());
-			
 			//errors.rejectValue("identifiers", piErrors.getMessage());
 			//return new String(piErrors.getMessage());
 			return new String("Failed to add ID to patient with possible duplicate");
