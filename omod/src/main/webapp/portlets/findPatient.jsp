@@ -249,7 +249,9 @@
 
 								console.log(data);
 								//DWRPatientService.createPatient(data.identifier, data.givenName, data.middleName, data.familyName, data.age, data.gender, data.birthdateString, data.deathDateString);
-								DWRPatientService.createPatient("6564/12/12/56729", "se", data.middleName, data.familyName, data.age, data.gender, data.birthdateString, data.deathDateString, handleSaveResults);
+								DWRPatientService.createPatient(data.identifier);
+
+								//DWRPatientService.createPatient("6564/12/12/56729", "se", data.middleName, data.familyName, data.age, data.gender, data.birthdateString, data.deathDateString, handleSaveResults);
 
 								//document.location = "${model.postURL}?patientId=" + data.identifier + "&phrase=" + lastSearch;
 
