@@ -218,11 +218,12 @@
 					// This method will be called by DWR with the search results
 					// Do something with the search results here, such as displaying them on the page
 					console.log("Search results:", result);
-					if (result == "success"){
-						document.location = "${model.postURL}?patientId=" + selectPatientIdentifier + "&phrase=" + lastSearch;
+					if (result.hasOwnProperty("success")){
+						
+						document.location = "${model.postURL}?patientId=" + result["success"] + "&phrase=" + lastSearch;
 
 					} else {
-						alert("Error: " + result);
+						alert("Error: " + result["error"]);
 
 					}
 				}
@@ -249,7 +250,7 @@
 
 								console.log(data);
 								//DWRPatientService.createPatient(data.identifier, data.givenName, data.middleName, data.familyName, data.age, data.gender, data.birthdateString, data.deathDateString);
-								DWRPatientService.createPatient(data.identifier);
+								DWRPatientService.createPatient(data.identifier, handleSaveResults);
 
 								//DWRPatientService.createPatient("6564/12/12/56729", "se", data.middleName, data.familyName, data.age, data.gender, data.birthdateString, data.deathDateString, handleSaveResults);
 

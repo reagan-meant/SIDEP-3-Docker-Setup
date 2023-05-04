@@ -797,10 +797,12 @@ public class DWRPatientService implements GlobalPropertyListener {
 	
 	/* 	public String createPatient(String identifier, String givenName, String middleName, String familyName, String age,
 		        String gender, String birthdateString, String deathDateString) throws ParseException { */
-	public String createPatient(String identifier) throws ParseException, Exception {
+	public Map<String, Object> createPatient(String identifier) throws ParseException, Exception {
 		//1232/12/12/12343 Broom Broom 44 F 1 janv. 1979 null
 		//System.out.println(identifier + givenName + middleName + familyName + age + gender + birthdateString
 		//        + deathDateString);
+		Map<String, Object> resultsMap = new HashMap<String, Object>();
+
 		IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
 				org.hl7.fhir.r4.model.Patient fhirPatient = client
 				.search()
@@ -910,31 +912,71 @@ public class DWRPatientService implements GlobalPropertyListener {
 		}
 		*/
 		//p.setGender(gender);
-		PatientIdentifier pi = new PatientIdentifier();
-		pi.setIdentifier(fhirPatient.getIdentifierFirstRep().getValue());
-				//p.setIdentifier(fhirPatient.getIdentifierFirstRep().getValue());
 
-		//legacyui.hapiIdTypeUUIDmap
-		PatientService ps = Context.getPatientService();
-		LocationService ls = Context.getLocationService();
-		
-		pi.setIdentifierType(ps.getPatientIdentifierTypeByUuid(Context.getAdministrationService().getGlobalProperty(
-		    "legacyui.hapiIdTypeUUIDmap")));
-		pi.setLocation(ls.getDefaultLocation());
-		pi.setPreferred(true);
-		
-		BindException piErrors = new BindException(pi, "patientIdentifier");
-		new PatientIdentifierValidator().validate(pi, piErrors);
-		if (piErrors.hasErrors()) {
-			//errors.rejectValue("identifiers", piErrors.getMessage());
-			//return new String(piErrors.getMessage());
-			return new String("Failed to add ID to patient with possible duplicate");
+		// Get the identifiers of the patient
+		List<org.hl7.fhir.r4.model.Identifier> identifiers = fhirPatient.getIdentifier();
+		// Print the system and code values of each identifier
+		for (org.hl7.fhir.r4.model.Identifier fhirIdentifier : identifiers) {
+			if (Context.getPatientService().getPatientIdentifierTypeByUuid(
+				fhirIdentifier.getType().getCodingFirstRep().getCode()) != null){
+				String system = fhirIdentifier.getSystem();
+				String code = fhirIdentifier.getValue();
+				//String type = fhirIdentifier.getType().getCodingFirstRep().getCode();
+				PatientIdentifier pi = new PatientIdentifier();
+				pi.setIdentifier(fhirIdentifier.getValue());
+	
+				pi.setIdentifierType(Context.getPatientService().getPatientIdentifierTypeByUuid(
+					fhirIdentifier.getType().getCodingFirstRep().getCode()));
+				pi.setLocation(Context.getLocationService().getDefaultLocation());
+				System.out.println("first one");
+				System.out.println(Context.getPatientService().getPatientIdentifierTypeByUuid(
+					fhirIdentifier.getType().getCodingFirstRep().getCode()));
+				System.out.println("second one");
+				System.out.println(Context.getLocationService().getDefaultLocation());
+				System.out.println("third one");
+				System.out.println(fhirIdentifier.getValue());
+				System.out.println("last one");
+				System.out.println(
+					fhirIdentifier.getType().getCodingFirstRep().getCode());
+				System.out.println(
+						fhirIdentifier.getType().getCodingFirstRep().getDisplay());
+	
+				switch (fhirIdentifier.getUse()) {
+					case OFFICIAL:
+						pi.setPreferred(true);
+						break;
+					default:
+						pi.setPreferred(false);
+						break;
+				}
+	
+				BindException piErrors = new BindException(pi, "patientIdentifier");
+				new PatientIdentifierValidator().validate(pi, piErrors);
+				if (piErrors.hasErrors()) {
+					//errors.rejectValue("identifiers", piErrors.getMessage());
+					//return new String(piErrors.getMessage());
+					//return new String("Failed to add ID to patient with possible duplicate " + piErrors.getMessage());
+					System.out.println(piErrors.getMessage());
+					log.warn(piErrors.getMessage());
+					 resultsMap.put("error", "Error validating identifiers" );
+					 return resultsMap;
+				}
+				p.addIdentifier(pi);
+			}
 			
+
 		}
-		p.addIdentifier(pi);
+
+		
+		//legacyui.hapiIdTypeUUIDmap
+		//PatientService ps = Context.getPatientService();
+		//LocationService ls = Context.getLocationService();
+		
 		
 		Patient patient = Context.getPatientService().savePatient(p);
-		return "success";
+		resultsMap.put("success", patient.getPatientId());
+
+		return resultsMap;
 		
 	}
 	
