@@ -153,7 +153,6 @@
 
 			<script type="text/javascript">
 				var lastSearch;
-				var selectPatientIdentifier;
 				$j(document).ready(function() {
 					$j('#mergePatientPopup').dialog({
 							title: '<openmrs:message code="Patient.merge.title"/>',
@@ -217,9 +216,7 @@
 				function handleSaveResults(result) {
 					// This method will be called by DWR with the search results
 					// Do something with the search results here, such as displaying them on the page
-					console.log("Search results:", result);
 					if (result.hasOwnProperty("success")){
-						
 						document.location = "${model.postURL}?patientId=" + result["success"] + "&phrase=" + lastSearch;
 
 					} else {
@@ -230,31 +227,15 @@
 				function doSelectionHandler(index, data) {
 					if(data.patientPresent == "Import"){
 						//Add the action directly on the button
-						selectPatientIdentifier = data.identifier;
-						var dialogData = {
-							name: "John",
-							age: 25,
-							gender: "Male"
-							};
-
-
+						
 						var $jdialog = $j("<div>").dialog({
 							title: '<openmrs:message code="legacyui.patient.import"/>',
 							autoOpen: false,
 							modal: true,
 							buttons: {
 								"Save": function() {
-								// Code to save changes goes here
 								$j(this).dialog("close");
-								console.log("my data is here");
-
-								console.log(data);
-								//DWRPatientService.createPatient(data.identifier, data.givenName, data.middleName, data.familyName, data.age, data.gender, data.birthdateString, data.deathDateString);
 								DWRPatientService.createPatient(data.identifier, handleSaveResults);
-
-								//DWRPatientService.createPatient("6564/12/12/56729", "se", data.middleName, data.familyName, data.age, data.gender, data.birthdateString, data.deathDateString, handleSaveResults);
-
-								//document.location = "${model.postURL}?patientId=" + data.identifier + "&phrase=" + lastSearch;
 
 								},
 								"Cancel": function() {
@@ -262,22 +243,11 @@
 								}
 							}
 							});
-							/* $jdialog.dialog("option", "dialogData", dialogData);
 
-							$jdialog.dialog({
-								open: function(event, ui) {
-									var dialogData = $j(this).dialog("option", "dialogData");
-									console.log(dialogData.name); // outputs "John"
-									console.log(dialogData.age); // outputs 25
-									console.log(dialogData.gender); // outputs "Male"
-								}
-								}); */
-
-								$jdialog.html("<p>givenName: " + data.givenName + "</p>" +
-									"<p>identifier: " + data.identifier + "</p>" +
-									"<p>familyName: " + data.familyName + "</p>" +
-									"<p>birthdateString: " + data.birthdateString + "</p>" +
-									"<p>patientPresent: " + data.patientPresent + "</p>" +
+								$jdialog.html("<p>Given Name: " + data.givenName + "</p>" +
+									"<p>Identifier: " + data.identifier + "</p>" +
+									"<p>Family Name: " + data.familyName + "</p>" +
+									"<p>Birth Date: " + data.birthdateString + "</p>" +
 									"<p>Gender: " + data.gender + "</p>");
 							$jdialog.dialog("open");
 
