@@ -38,15 +38,14 @@ public class LegacyUIConfig {
 	}
 	
 	public String getClientRegistryUserName() {
-		return Context.getAdministrationService().getGlobalProperty(LegacyUIConstants.GP_CLIENT_REGISTRY_USER_NAME, "sss");
+		return Context.getAdministrationService().getGlobalProperty(LegacyUIConstants.GP_CLIENT_REGISTRY_USER_NAME);
 	}
 	
 	public String getClientRegistryPassword() {
-		return Context.getAdministrationService().getGlobalProperty(LegacyUIConstants.GP_CLIENT_REGISTRY_PASSWORD, "ssss");
+		return Context.getAdministrationService().getGlobalProperty(LegacyUIConstants.GP_CLIENT_REGISTRY_PASSWORD);
 	}
 	
 	public String getClientRegistryIdentifierRoot() {
-		return Context.getAdministrationService().getGlobalProperty(LegacyUIConstants.GP_CLIENT_REGISTRY_IDENTIFIER_ROOT,
-		    "sss");
+		return Context.getAdministrationService().getGlobalProperty(LegacyUIConstants.GP_CLIENT_REGISTRY_IDENTIFIER_ROOT);
 	}
 }
