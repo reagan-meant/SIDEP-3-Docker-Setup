@@ -122,7 +122,7 @@ public class DWRPatientService implements GlobalPropertyListener {
 		
 		// the list to return
 		List<Object> patientList = new Vector<Object>();
-		
+
 		PatientService ps = Context.getPatientService();
 		Collection<Patient> patients;
 		
@@ -135,75 +135,7 @@ public class DWRPatientService implements GlobalPropertyListener {
 		}
 		
 		patientList = new Vector<Object>(patients.size() + this.mypatients.size());
-		
-		for (org.hl7.fhir.r4.model.Patient fhirPatient : this.mypatients) {
-			PatientListItem PatientLI = new PatientListItem();
-			
-			// Set patient identifier
-			PatientLI.setIdentifier(fhirPatient.getIdentifierFirstRep().getValue());
-			
-			// Set patient name
-			List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();
-			if (!givenNames.isEmpty()) {
-				PatientLI.setGivenName(WebUtil.escapeHTML(givenNames.get(0).getValue()));
-				
-				StringBuilder sb = new StringBuilder();
-				for (int i = 1; i < givenNames.size(); i++) {
-					sb.append(givenNames.get(i).getValue()).append(" ");
-				}
-				
-				if (sb.length() > 0) {
-					sb.deleteCharAt(sb.length() - 1);
-				}
-				
-				PatientLI.setMiddleName(WebUtil.escapeHTML(sb.toString()));
-				
-			}
-			
-			PatientLI.setFamilyName(WebUtil.escapeHTML(fhirPatient.getNameFirstRep().getFamily()));
-			// Set patient date of birth
-			if (fhirPatient.hasBirthDate()) {
-				PatientLI.setBirthdate(fhirPatient.getBirthDate());
-				PatientLI.setBirthdateString(WebUtil.formatDate(fhirPatient.getBirthDate()));
-			}
-			
-			switch (fhirPatient.getBirthDateElement().getPrecision()) {
-				case DAY:
-					PatientLI.setBirthdateEstimated(false);
-					break;
-				case MONTH:
-				case YEAR:
-					PatientLI.setBirthdateEstimated(true);
-					break;
-			}
-			// Set patient Age
-			LocalDate today = LocalDate.now();
-			LocalDate localBirthDate = fhirPatient.getBirthDate().toInstant().atZone(java.time.ZoneId.systemDefault())
-			        .toLocalDate();
-			Period period = Period.between(localBirthDate, today);
-			PatientLI.setAge(period.getYears());
-			
-			// Set patient gender
-			if (fhirPatient.hasGender()) {
-				switch (fhirPatient.getGender()) {
-					case MALE:
-						PatientLI.setGender("M");
-						break;
-					case FEMALE:
-						PatientLI.setGender("F");
-						break;
-					case OTHER:
-						PatientLI.setGender("O");
-						break;
-					case UNKNOWN:
-						PatientLI.setGender("U");
-						break;
-				}
-			}
-			//Tag for patient from HAPI
-			PatientLI.setPatientPresent("Import");
-			patientList.add(PatientLI);
-		}
+
 		for (Patient p : patients) {
 			PatientListItem PatientLI = new PatientListItem(p, searchValue);
 			PatientListItem htmlSafePatientLI = PatientLI;
@@ -211,9 +143,83 @@ public class DWRPatientService implements GlobalPropertyListener {
 			htmlSafePatientLI.setFamilyName(WebUtil.escapeHTML(PatientLI.getFamilyName()));
 			patientList.add(htmlSafePatientLI);
 		}
+
+		for (org.hl7.fhir.r4.model.Patient fhirPatient : this.mypatients) {
+
+			if ( !patientList.stream().anyMatch(obj -> ((PatientListItem)obj).getIdentifier().equals(fhirPatient.getIdentifierFirstRep().getValue()))){
+				PatientListItem PatientLI = new PatientListItem();
+			
+				// Set patient identifier
+				PatientLI.setIdentifier(fhirPatient.getIdentifierFirstRep().getValue());
+				
+				// Set patient name
+				List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();
+				if (!givenNames.isEmpty()) {
+					PatientLI.setGivenName(WebUtil.escapeHTML(givenNames.get(0).getValue()));
+					
+					StringBuilder sb = new StringBuilder();
+					for (int i = 1; i < givenNames.size(); i++) {
+						sb.append(givenNames.get(i).getValue()).append(" ");
+					}
+					
+					if (sb.length() > 0) {
+						sb.deleteCharAt(sb.length() - 1);
+					}
+					
+					PatientLI.setMiddleName(WebUtil.escapeHTML(sb.toString()));
+					
+				}
+				
+				PatientLI.setFamilyName(WebUtil.escapeHTML(fhirPatient.getNameFirstRep().getFamily()));
+				// Set patient date of birth
+				if (fhirPatient.hasBirthDate()) {
+					PatientLI.setBirthdate(fhirPatient.getBirthDate());
+					PatientLI.setBirthdateString(WebUtil.formatDate(fhirPatient.getBirthDate()));
+				}
+				
+				switch (fhirPatient.getBirthDateElement().getPrecision()) {
+					case DAY:
+						PatientLI.setBirthdateEstimated(false);
+						break;
+					case MONTH:
+					case YEAR:
+						PatientLI.setBirthdateEstimated(true);
+						break;
+				}
+				// Set patient Age
+				LocalDate today = LocalDate.now();
+				LocalDate localBirthDate = fhirPatient.getBirthDate().toInstant().atZone(java.time.ZoneId.systemDefault())
+						.toLocalDate();
+				Period period = Period.between(localBirthDate, today);
+				PatientLI.setAge(period.getYears());
+				
+				// Set patient gender
+				if (fhirPatient.hasGender()) {
+					switch (fhirPatient.getGender()) {
+						case MALE:
+							PatientLI.setGender("M");
+							break;
+						case FEMALE:
+							PatientLI.setGender("F");
+							break;
+						case OTHER:
+							PatientLI.setGender("O");
+							break;
+						case UNKNOWN:
+							PatientLI.setGender("U");
+							break;
+					}
+				}
+				//Tag for patient from HAPI
+				PatientLI.setPatientPresent("Import");
+				patientList.add(PatientLI);
+			}
+		
+		}
+		
 		//no results found and a number was in the search --
 		//should check whether the check digit is correct.
-		if (patients.size() == 0 && searchValue.matches(".*\\d+.*")) {
+		if (this.mypatients.size() == 0 && patients.size() == 0 && searchValue.matches(".*\\d+.*")) {
 			
 			//Looks through all the patient identifier validators to see if this type of identifier
 			//is supported for any of them.  If it isn't, then no need to warn about a bad check
