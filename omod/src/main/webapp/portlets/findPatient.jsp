@@ -150,10 +150,27 @@
 			<openmrs:htmlInclude file="/scripts/jquery-ui/js/openmrsSearch.js" />
 
 			<openmrs:globalProperty key="patient.listingAttributeTypes" var="attributesToList"/>
-			
+
 			<script type="text/javascript">
 				var lastSearch;
 				$j(document).ready(function() {
+					$j('#mergePatientPopup').dialog({
+							title: '<openmrs:message code="Patient.merge.title"/>',
+							autoOpen: false,
+							draggable: false,
+							resizable: false,
+							width: '95%',
+							modal: true,
+							open: function(a, b) { $j('#mergePatientPopupLoading').show(); }
+					});
+				$j("#mergePatientPopupIframe").load(function() { $j('#mergePatientPopupLoading').hide(); });
+
+				function showMergePatientPopup() {
+					$j('#mergePatientPopup')
+						.dialog('option', 'height', $j(window).height() - 50) 
+						.dialog('open');
+					return true;
+				}
 					new OpenmrsSearch("findPatients", false, doPatientSearch, doSelectionHandler,
 						[	{fieldName:"identifier", header:omsgs.identifier},
 							{fieldName:"givenName", header:omsgs.givenName},
@@ -162,13 +179,14 @@
 							{fieldName:"age", header:omsgs.age},
 							{fieldName:"gender", header:omsgs.gender},
 							{fieldName:"birthdateString", header:omsgs.birthdate},
-							{fieldName:"deathDateString", header:omsgs.deathdate}
+							{fieldName:"deathDateString", header:omsgs.deathdate},
+							{fieldName:"patientPresent", header:omsgs.action}
 						],
 						{
                             searchLabel: '<openmrs:message code="Patient.searchBox" javaScriptEscape="true"/>',
                             searchPlaceholder:'<openmrs:message code="Patient.searchBox.placeholder" javaScriptEscape="true"/>',
                             attributes: [
-                                     	<c:forEach var="attribute" items="${fn:split(attributesToList, ',')}" varStatus="varStatus">
+							<c:forEach var="attribute" items="${fn:split(attributesToList, ',')}" varStatus="varStatus">
                                            <c:if test="${fn:trim(attribute) != ''}">
                                            <c:set var="attributeName" value="${fn:trim(attribute)}" />
                                 			     <c:choose>
@@ -195,8 +213,47 @@
 
 				});
 
+				function handleSaveResults(result) {
+					// This method will be called by DWR with the search results
+					// Do something with the search results here, such as displaying them on the page
+					if (result.hasOwnProperty("success")){
+						document.location = "${model.postURL}?patientId=" + result["success"] + "&phrase=" + lastSearch;
+
+					} else {
+						alert("Error: " + result["error"]);
+
+					}
+				}
 				function doSelectionHandler(index, data) {
-					document.location = "${model.postURL}?patientId=" + data.patientId + "&phrase=" + lastSearch;
+					if(data.patientPresent == "Import"){
+						//Add the action directly on the button
+						
+						var $jdialog = $j("<div>").dialog({
+							title: '<openmrs:message code="legacyui.patient.import"/>',
+							autoOpen: false,
+							modal: true,
+							buttons: {
+								"Save": function() {
+								$j(this).dialog("close");
+								DWRPatientService.createPatient(data.identifier, handleSaveResults);
+
+								},
+								"Cancel": function() {
+									$j(this).dialog("close");
+								}
+							}
+							});
+
+								$jdialog.html("<p>Given Name: " + data.givenName + "</p>" +
+									"<p>Identifier: " + data.identifier + "</p>" +
+									"<p>Family Name: " + data.familyName + "</p>" +
+									"<p>Birth Date: " + data.birthdateString + "</p>" +
+									"<p>Gender: " + data.gender + "</p>");
+							$jdialog.dialog("open");
+
+					}else{
+						document.location = "${model.postURL}?patientId=" + data.patientId + "&phrase=" + lastSearch;
+					}
 				}
 
 				//searchHandler for the Search widget
@@ -204,7 +261,7 @@
 					lastSearch = text;
 					DWRPatientService.findCountAndPatients(text, opts.start, opts.length, getMatchCount, resultHandler);
 				}
-
+			
 			</script>
 
 			<div>
@@ -212,6 +269,11 @@
 				<div class="box">
 					<div class="searchWidgetContainer" id="findPatients"></div>
 				</div>
+			</div>
+
+			<div id="mergePatientPopup">
+				<div id="mergePatientPopupLoading"><openmrs:message code="general.loading"/></div>
+				<iframe id="mergePatientPopupIframe" name="mergePatientPopupIframe" width="100%" height="100%" marginWidth="0" marginHeight="0" frameBorder="0" scrolling="auto"></iframe>
 			</div>
 
 			<c:if test="${empty model.hideAddNewPatient}">

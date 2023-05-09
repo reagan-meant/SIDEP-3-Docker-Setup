@@ -79,6 +79,7 @@
 				<include method="findCountAndPatients"/>
 				<include method="findCountAndPatientsWithVoided"/>
 				<include method="findBatchOfPatients"/>
+				<include method="createPatient"/>
 			</create>
 			
 			<create creator="new" javascript="DWRPersonService">
@@ -380,6 +381,13 @@
 		<defaultValue></defaultValue>
 		<description>
 			Allows one to limit the number of encounters shown on the form entry tab of the patient dashboard specifically
+		</description>
+	</globalProperty>
+	<globalProperty>
+		<property>legacyui.hapiIdTypeUUIDmap</property>
+		<defaultValue></defaultValue>
+		<description>
+			UUID for the HAPI Identifier
 		</description>
 	</globalProperty>
 

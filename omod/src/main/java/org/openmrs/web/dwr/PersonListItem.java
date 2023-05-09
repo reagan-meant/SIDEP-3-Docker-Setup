@@ -378,6 +378,10 @@ public class PersonListItem {
 		return age;
 	}
 	
+	public void setAge(int age) {
+		this.age = age;
+	}
+	
 	public Map<String, String> getAttributes() {
 		return attributes;
 	}
