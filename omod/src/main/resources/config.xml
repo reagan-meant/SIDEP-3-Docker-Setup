@@ -26,7 +26,11 @@
 	<require_version>${openmrsPlatformVersion}</require_version>
 	<!-- / Module Properties -->
 
-	
+	<aware_of_modules>
+		     <aware_of_module>org.openmrs.module.clientregistry</aware_of_module>
+			 <aware_of_module>org.openmrs.module.fhir2</aware_of_module>
+
+	</aware_of_modules>
 	<!-- Module Activator -->
 	<activator>${project.parent.groupId}.${project.parent.artifactId}.LegacyUIActivator</activator>
 	
@@ -392,4 +396,3 @@
 	</globalProperty>
 
 </module>
-

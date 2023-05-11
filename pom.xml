@@ -54,8 +54,7 @@
 		<openmrsPlatformVersion>2.0.0</openmrsPlatformVersion>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <javaCompilerVersion>1.8</javaCompilerVersion>
-		<hapifhirVersion>5.4.0</hapifhirVersion>
-
+		<fhir2Version>1.10.0-SNAPSHOT</fhir2Version>
 	</properties>
 
 	<dependencyManagement>
@@ -115,9 +114,9 @@
                 <version>2.0</version>
                 <scope>provided</scope>
             </dependency>
-						
+			
 			<!-- End OpenMRS core -->
-
+ 		
 		</dependencies>
 	</dependencyManagement>
 

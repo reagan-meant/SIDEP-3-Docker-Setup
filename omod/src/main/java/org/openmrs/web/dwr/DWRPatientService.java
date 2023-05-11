@@ -56,8 +56,11 @@ import org.openmrs.patient.UnallowedIdentifierException;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.validator.PatientIdentifierValidator;
 import org.openmrs.web.WebUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.validation.BindException;
-import org.openmrs.module.legacyui.FhirLegacyUIConfig;
+
+//import org.openmrs.module.legacyui.FhirLegacyUIConfig;
 
 /**
  * DWR patient methods. The methods in here are used in the webapp to get data from the database via
@@ -73,6 +76,10 @@ public class DWRPatientService implements GlobalPropertyListener {
 	
 	private List<org.hl7.fhir.r4.model.Patient> mypatients;
 	
+	/* @Autowired
+	@Qualifier("clientRegistryFhirClient")
+	private IGenericClient client;
+	 */
 	/**
 	 * Search on the <code>searchValue</code>. If a number is in the search string, do an identifier
 	 * search. Else, do a name search
@@ -289,7 +296,8 @@ public class DWRPatientService implements GlobalPropertyListener {
 			int patientCount = 0;
 			//if this is the first call
 			if (getMatchCount) {
-				IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
+				//IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
+				IGenericClient client = Context.getRegisteredComponent("clientRegistryFhirClient", IGenericClient.class);
 		this.mypatients = client
 			.search()
 			.forResource(org.hl7.fhir.r4.model.Patient.class)
@@ -788,7 +796,9 @@ public class DWRPatientService implements GlobalPropertyListener {
 
 		Map<String, Object> resultsMap = new HashMap<String, Object>();
 		//Get patient
-		IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
+		//IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
+		IGenericClient client = Context.getRegisteredComponent("clientRegistryFhirClient", IGenericClient.class);
+
 				org.hl7.fhir.r4.model.Patient fhirPatient = client
 				.search()
 				.forResource(org.hl7.fhir.r4.model.Patient.class)
@@ -862,7 +872,7 @@ public class DWRPatientService implements GlobalPropertyListener {
 		name.setDateChanged(new Date());
 		p.addName(name);
 		p.setBirthdate(fhirPatient.getBirthDate());
-
+		p.setUuid(fhirPatient.getId());
 		// Get the identifiers of the patient
 		List<org.hl7.fhir.r4.model.Identifier> identifiers = fhirPatient.getIdentifier();
 		for (org.hl7.fhir.r4.model.Identifier fhirIdentifier : identifiers) {
