@@ -1,0 +1,8 @@
+<config>
+  <globalProperties>
+    <globalProperty>
+      <property>clientregistry.serverUrl</property>
+      <value>http://openhim-core:5001/CR/fhir</value>
+    </globalProperty>
+  </globalProperties>
+</config>
