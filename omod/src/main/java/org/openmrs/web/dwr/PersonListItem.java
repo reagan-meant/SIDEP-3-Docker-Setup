@@ -407,4 +407,8 @@ public class PersonListItem {
 		return uuid;
 	}
 	
+	public void setUuid(String uuid) {
+		this.uuid = uuid;
+	}
+	
 }

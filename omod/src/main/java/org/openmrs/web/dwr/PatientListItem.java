@@ -30,6 +30,8 @@ public class PatientListItem extends PersonListItem {
 	
 	private String patientPresent = "";
 	
+	private String clientRegistryId = "";
+	
 	public PatientListItem() {
 	}
 	
@@ -128,6 +130,20 @@ public class PatientListItem extends PersonListItem {
 	 */
 	public String getPatientPresent() {
 		return patientPresent;
+	}
+	
+	/**
+	 * @param clientRegistryId the clientRegistryId to set
+	 */
+	public void setClientRegistryId(String clientRegistryId) {
+		this.clientRegistryId = clientRegistryId;
+	}
+	
+	/**
+	 * @return the clientRegistryId
+	 */
+	public String getClientRegistryId() {
+		return clientRegistryId;
 	}
 	
 }
