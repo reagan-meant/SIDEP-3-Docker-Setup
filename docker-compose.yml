@@ -115,7 +115,7 @@ services:
   openhim-core:
     container_name: openhim-core
     hostname: openhim-core
-    image: jembi/openhim-core:latest
+    image: jembi/openhim-core:v7.1.0
     restart: unless-stopped
     environment:
       mongo_url: "mongodb://mongo-db/openhim"
@@ -170,7 +170,7 @@ services:
   openhim-console:
     container_name: openhim-console
     hostname: openhim-console
-    image: jembi/openhim-console:latest
+    image: jembi/openhim-console:v1.15.0
     restart: unless-stopped
     volumes:
       - ./configs/openhim-console/default.json:/usr/share/nginx/html/config/default.json
