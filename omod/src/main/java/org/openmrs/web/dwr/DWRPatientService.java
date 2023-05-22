@@ -163,7 +163,7 @@ public class DWRPatientService implements GlobalPropertyListener {
 				List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();
 				if (!givenNames.isEmpty()) {
 					PatientLI.setGivenName(WebUtil.escapeHTML(givenNames.get(0).getValue()));
-					
+
 					StringBuilder sb = new StringBuilder();
 					for (int i = 1; i < givenNames.size(); i++) {
 						sb.append(givenNames.get(i).getValue()).append(" ");
@@ -817,8 +817,8 @@ public class DWRPatientService implements GlobalPropertyListener {
 		p.setPersonDateCreated(new Date());
 		p.setPersonChangedBy(user);
 		p.setPersonDateChanged(new Date());
-
-		// Set patient name
+		
+				// Set patient name
 		PersonName name = new PersonName();
 		List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();
 		if (!givenNames.isEmpty()) {
@@ -872,7 +872,6 @@ public class DWRPatientService implements GlobalPropertyListener {
 		name.setDateChanged(new Date());
 		p.addName(name);
 		p.setBirthdate(fhirPatient.getBirthDate());
-		p.setUuid(fhirPatient.getId());
 		// Get the identifiers of the patient
 		List<org.hl7.fhir.r4.model.Identifier> identifiers = fhirPatient.getIdentifier();
 		for (org.hl7.fhir.r4.model.Identifier fhirIdentifier : identifiers) {

@@ -11,15 +11,37 @@ package org.openmrs.module.legacyui;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.openmrs.PatientIdentifierType;
+import org.openmrs.api.PatientService;
 import org.openmrs.module.BaseModuleActivator;
 import org.openmrs.module.ModuleActivator;
+import org.openmrs.module.fhir2.api.FhirPatientIdentifierSystemService;
+import org.openmrs.module.fhir2.model.FhirPatientIdentifierSystem;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * This class contains the logic that is run every time this module is either started or stopped.
  */
-public class LegacyUIActivator extends BaseModuleActivator {
+import org.springframework.stereotype.Component;
+
+@Component
+public class LegacyUIActivator extends BaseModuleActivator implements ApplicationContextAware {
 	
 	protected Log log = LogFactory.getLog(getClass());
+	
+	private static ApplicationContext applicationContext;
+	
+	@Autowired
+	PatientService patientService;
+	
+	@Autowired
+	FhirPatientIdentifierSystemService fhirPatientIdentifierSystemService;
 	
 	/**
 	 * @see ModuleActivator#willRefreshContext()
@@ -46,6 +68,10 @@ public class LegacyUIActivator extends BaseModuleActivator {
 	 * @see ModuleActivator#started()
 	 */
 	public void started() {
+		applicationContext.getAutowireCapableBeanFactory().autowireBean(this);
+		
+		createFhirPatientIdentierSystem();
+		
 		log.info("Legacy UI Module started");
 	}
 	
@@ -61,6 +87,39 @@ public class LegacyUIActivator extends BaseModuleActivator {
 	 */
 	public void stopped() {
 		log.info("Legacy UI Module stopped");
+	}
+	
+	private void createFhirPatientIdentierSystem() {
+		
+		List<PatientIdentifierType> pidTypes = patientService.getAllPatientIdentifierTypes(false);
+		for (PatientIdentifierType pidType : pidTypes) {
+			Optional<FhirPatientIdentifierSystem> existingIdSystem = fhirPatientIdentifierSystemService
+			        .getFhirPatientIdentifierSystem(pidType);
+			if (existingIdSystem.isPresent()) {
+				existingIdSystem.get().setPatientIdentifierType(pidType);
+				//existingIdSystem.get().setUrl("http://openelis-global.org/pat_xx");
+				existingIdSystem.get().setUrl("https://openmrs.org/" + pidType.getName().replace(" ", "_"));
+				
+				fhirPatientIdentifierSystemService.saveFhirPatientIdentifierSystem(existingIdSystem.get());
+			} else {
+				FhirPatientIdentifierSystem idSystem = new FhirPatientIdentifierSystem();
+				idSystem.setName(pidType.getName() + " ID System");
+				idSystem.setPatientIdentifierType(pidType);
+				pidType.getName();
+				idSystem.setUrl("https://openmrs.org/" + pidType.getName().replace(" ", "_"));
+				fhirPatientIdentifierSystemService.saveFhirPatientIdentifierSystem(idSystem);
+			}
+		}
+		
+		/* PatientIdentifierType pidType = patientService
+		        .getPatientIdentifierTypeByUuid("b3b24192-6856-46fd-ab4e-acde31f80c85"); */
+		
+	}
+	
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		// TODO Auto-generated method stub
+		this.applicationContext = applicationContext;
 	}
 	
 }
