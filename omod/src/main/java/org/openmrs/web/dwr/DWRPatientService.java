@@ -39,6 +39,8 @@ import ca.uhn.fhir.rest.client.api.IGenericClient;
 import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonAddress;
+import org.openmrs.PersonAttribute;
+import org.openmrs.PersonAttributeType;
 import org.openmrs.PersonName;
 import org.openmrs.api.APIAuthenticationException;
 import org.openmrs.api.APIException;
@@ -64,6 +66,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.validation.BindException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.hl7.fhir.r4.model.Reference;
 
 //import org.openmrs.module.legacyui.FhirLegacyUIConfig;
 
@@ -80,6 +83,8 @@ public class DWRPatientService implements GlobalPropertyListener {
 	private static Integer maximumResults;
 	
 	private List<org.hl7.fhir.r4.model.Patient> mypatients;
+	
+	private String CRUID = "";
 	
 	/*
 	 * @Autowired
@@ -161,16 +166,31 @@ public class DWRPatientService implements GlobalPropertyListener {
 
 		for (org.hl7.fhir.r4.model.Patient fhirPatient : this.mypatients) {
 
+			List<Reference> links = fhirPatient.getLink()
+        .stream()
+        .map(patientLink -> patientLink.getOther())
+        .collect(Collectors.toList());
+		//String CRUID = "hh";
+		// Print the link references
+		for (Reference link : links) {
+			System.out.println("Link Reference: " + link.getReference());
+			CRUID = extractUUID(link.getReference());
+			System.out.println(CRUID);
+		}
+		
 			Optional<String> uuidOptional = fhirPatient.getIdentifier().stream()
 					.filter(identifier -> "http://clientregistry.org/openmrs".equals(identifier.getSystem()))
 					.map(Identifier::getValue)
 					.findFirst();
+					
+				//Boolean cruidExists = personList.stream()
+				//	.anyMatch(person -> person.getAttributes().containsKey("CRUID"));
 
-			if (!uuidOptional.isPresent() || (uuidOptional.isPresent() && !patientList.stream()
-					.anyMatch(obj -> ((PatientListItem) obj).getUuid().equals(extractUUID(uuidOptional.get()))))) {
+			if (CRUID !=null && ! patientList.stream()
+					.anyMatch(obj -> CRUID.equals(((PatientListItem) obj).getAttributes().get("CRUID")))) {
 
 				PatientListItem PatientLI = new PatientListItem();
-				
+				PatientLI.getAttributes().get("CRUID");
 				// Set patient identifier
 				PatientLI.setIdentifier(fhirPatient.getIdentifierFirstRep().getValue());
 
@@ -881,6 +901,24 @@ public class DWRPatientService implements GlobalPropertyListener {
 		p.setPersonChangedBy(user);
 		p.setPersonDateChanged(new Date());
 		p.setUuid(CRIdentifier);
+
+
+		List<Reference> links = fhirPatient.getLink()
+        .stream()
+        .map(patientLink -> patientLink.getOther())
+        .collect(Collectors.toList());
+		String CRUID = null;
+		// Print the link references
+		for (Reference link : links) {
+			System.out.println("Link Reference: " + link.getReference());
+			CRUID = extractUUID(link.getReference());
+			System.out.println(CRUID);
+		}
+		//Add null checker for attribute CRUID
+		PersonAttributeType type = Context.getPersonService().getPersonAttributeTypeByUuid("793a8d9f-63c6-4edd-a321-53b23165be50");
+		PersonAttribute attribute = new PersonAttribute(type, CRUID);
+		p.addAttribute(attribute);
+
 		// Set patient name
 		PersonName name = new PersonName();
 		List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();

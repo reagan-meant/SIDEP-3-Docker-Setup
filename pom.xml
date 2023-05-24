@@ -258,6 +258,11 @@
 			<name>OpenMRS Nexus Repository</name>
 			<url>https://mavenrepo.openmrs.org/public</url>
 		</repository>
+		<repository>
+          <id>github-packages</id>
+          <name>Github Maven Repo</name>
+          <url>https://maven.pkg.github.com/i-tech-uw/openmrs-module-clientregistry</url>
+        </repository>
 	</repositories>
 
 	<pluginRepositories>
