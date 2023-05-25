@@ -170,12 +170,10 @@ public class DWRPatientService implements GlobalPropertyListener {
         .stream()
         .map(patientLink -> patientLink.getOther())
         .collect(Collectors.toList());
-		//String CRUID = "hh";
+
 		// Print the link references
 		for (Reference link : links) {
-			System.out.println("Link Reference: " + link.getReference());
 			CRUID = extractUUID(link.getReference());
-			System.out.println(CRUID);
 		}
 		
 			Optional<String> uuidOptional = fhirPatient.getIdentifier().stream()
@@ -910,9 +908,7 @@ public class DWRPatientService implements GlobalPropertyListener {
 		String CRUID = null;
 		// Print the link references
 		for (Reference link : links) {
-			System.out.println("Link Reference: " + link.getReference());
 			CRUID = extractUUID(link.getReference());
-			System.out.println(CRUID);
 		}
 		//Add null checker for attribute CRUID
 		PersonAttributeType type = Context.getPersonService().getPersonAttributeTypeByUuid("793a8d9f-63c6-4edd-a321-53b23165be50");
@@ -973,15 +969,31 @@ public class DWRPatientService implements GlobalPropertyListener {
 		p.setBirthdate(fhirPatient.getBirthDate());
 		// Get the identifiers of the patient
 		List<org.hl7.fhir.r4.model.Identifier> identifiers = fhirPatient.getIdentifier();
+		String fhirIdsExp = "http://clientregistry.org/artnumber|6b6e9d94-015b-48f6-ac95-da239512ff91, http://clientregistry.org/openmrs|3825d4f8-1afd-4da4-b30f-e0ff4cd256a5";
+		String fhirIds = Context.getAdministrationService().getGlobalProperty("fhirIds", fhirIdsExp);
+		Map<String, String> optionsMap = new HashMap<>();
+		String[] options  = fhirIds.split(",");
+
+        //String[] options = fhirIds.split("\\|");
+        for (String option : options) {
+			String[] keyValue = option.split("\\|");
+
+            if (keyValue.length == 2) {
+                String key = keyValue[0].trim();
+                String value = keyValue[1].trim();
+                optionsMap.put(key, value);
+            }
+        }
 		for (org.hl7.fhir.r4.model.Identifier fhirIdentifier : identifiers) {
-			if (Context.getPatientService().getPatientIdentifierTypeByUuid(
-			    fhirIdentifier.getType().getCodingFirstRep().getCode()) != null) {
+
+			if(fhirIdentifier.getSystem() != null && optionsMap.get(fhirIdentifier.getSystem()) != null){
 				
 				PatientIdentifier pi = new PatientIdentifier();
 				pi.setIdentifier(fhirIdentifier.getValue());
 				
 				pi.setIdentifierType(Context.getPatientService().getPatientIdentifierTypeByUuid(
-				    fhirIdentifier.getType().getCodingFirstRep().getCode()));
+				    optionsMap.get(fhirIdentifier.getSystem())));
+
 				pi.setLocation(Context.getLocationService().getDefaultLocation());
 				
 				switch (fhirIdentifier.getUse()) {
