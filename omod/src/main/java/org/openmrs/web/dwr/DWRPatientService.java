@@ -176,19 +176,10 @@ public class DWRPatientService implements GlobalPropertyListener {
 			CRUID = extractUUID(link.getReference());
 		}
 		
-			Optional<String> uuidOptional = fhirPatient.getIdentifier().stream()
-					.filter(identifier -> "http://clientregistry.org/openmrs".equals(identifier.getSystem()))
-					.map(Identifier::getValue)
-					.findFirst();
-					
-				//Boolean cruidExists = personList.stream()
-				//	.anyMatch(person -> person.getAttributes().containsKey("CRUID"));
-
-			if (CRUID !=null && ! patientList.stream()
-					.anyMatch(obj -> CRUID.equals(((PatientListItem) obj).getAttributes().get("CRUID")))) {
+			if (CRUID !=null && !patientList.stream()
+					.anyMatch(obj -> CRUID.equals(((PatientListItem) obj).getClientRegistryId()))) {
 
 				PatientListItem PatientLI = new PatientListItem();
-				PatientLI.getAttributes().get("CRUID");
 				// Set patient identifier
 				PatientLI.setIdentifier(fhirPatient.getIdentifierFirstRep().getValue());
 
@@ -862,166 +853,11 @@ public class DWRPatientService implements GlobalPropertyListener {
 	}
 	
 	public Map<String, Object> createPatient(String CRIdentifier) throws ParseException, Exception {
-		
 		Map<String, Object> resultsMap = new HashMap<String, Object>();
-		// Get patient
-		// IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
-		IGenericClient client = Context.getRegisteredComponent("clientRegistryFhirClient", IGenericClient.class);
 		
-		/*
-		 * org.hl7.fhir.r4.model.Patient fhirPatient = client
-		 * .search()
-		 * .forResource(org.hl7.fhir.r4.model.Patient.class)
-		 * .where(org.hl7.fhir.r4.model.Patient.IDENTIFIER.exactly().systemAndIdentifier
-		 * (LegacyUIConstants.CLIENT_REGISTRY_INTERNAL_ID_SYSTEM, searchValue))
-		 * .where(org.hl7.fhir.r4.model.Patient.IDENTIFIER.exactly().systemAndIdentifier
-		 * ("http://clientregistry.org/artnumber", identifier))
-		 * .returnBundle(Bundle.class)
-		 * .execute()
-		 * .getEntry()
-		 * .stream()
-		 * .map(e -> (org.hl7.fhir.r4.model.Patient) e.getResource())
-		 * .collect(Collectors.toList()).get(0);
-		 */
-		
-		// Patient patient = client.read()
-		org.hl7.fhir.r4.model.Patient fhirPatient = client.read()
-		
-		.resource(org.hl7.fhir.r4.model.Patient.class)
-		
-		// .resource(Patient.class)
-		        .withId(CRIdentifier).execute();
-		
-		User user = Context.getAuthenticatedUser();
-		Patient p = new Patient();
-		p.setPersonCreator(user);
-		p.setPersonDateCreated(new Date());
-		p.setPersonChangedBy(user);
-		p.setPersonDateChanged(new Date());
-		p.setUuid(CRIdentifier);
-
-
-		List<Reference> links = fhirPatient.getLink()
-        .stream()
-        .map(patientLink -> patientLink.getOther())
-        .collect(Collectors.toList());
-		String CRUID = null;
-		// Print the link references
-		for (Reference link : links) {
-			CRUID = extractUUID(link.getReference());
-		}
-		//Add null checker for attribute CRUID
-		PersonAttributeType type = Context.getPersonService().getPersonAttributeTypeByUuid("793a8d9f-63c6-4edd-a321-53b23165be50");
-		PersonAttribute attribute = new PersonAttribute(type, CRUID);
-		p.addAttribute(attribute);
-
-		// Set patient name
-		PersonName name = new PersonName();
-		List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();
-		if (!givenNames.isEmpty()) {
-			
-			StringBuilder sb = new StringBuilder();
-			for (int i = 1; i < givenNames.size(); i++) {
-				sb.append(givenNames.get(i).getValue()).append(" ");
-			}
-			
-			if (sb.length() > 0) {
-				sb.deleteCharAt(sb.length() - 1);
-			}
-			
-			name = new PersonName(givenNames.get(0).getValue(), sb.toString(), fhirPatient.getNameFirstRep().getFamily());
-			
-		}
-		
-		switch (fhirPatient.getBirthDateElement().getPrecision()) {
-			case DAY:
-				p.setBirthdateEstimated(false);
-				break;
-			case MONTH:
-			case YEAR:
-				p.setBirthdateEstimated(true);
-				break;
-		}
-		
-		// Set patient gender
-		if (fhirPatient.hasGender()) {
-			switch (fhirPatient.getGender()) {
-				case MALE:
-					p.setGender("M");
-					break;
-				case FEMALE:
-					p.setGender("F");
-					break;
-				case OTHER:
-					p.setGender("O");
-					break;
-				case UNKNOWN:
-					p.setGender("U");
-					break;
-			}
-		}
-		
-		name.setCreator(user);
-		name.setDateCreated(new Date());
-		name.setChangedBy(user);
-		name.setDateChanged(new Date());
-		p.addName(name);
-		p.setBirthdate(fhirPatient.getBirthDate());
-		// Get the identifiers of the patient
-		List<org.hl7.fhir.r4.model.Identifier> identifiers = fhirPatient.getIdentifier();
-		String fhirIdsExp = "http://clientregistry.org/artnumber|6b6e9d94-015b-48f6-ac95-da239512ff91, http://clientregistry.org/openmrs|3825d4f8-1afd-4da4-b30f-e0ff4cd256a5";
-		String fhirIds = Context.getAdministrationService().getGlobalProperty("fhirIds", fhirIdsExp);
-		Map<String, String> optionsMap = new HashMap<>();
-		String[] options  = fhirIds.split(",");
-
-        //String[] options = fhirIds.split("\\|");
-        for (String option : options) {
-			String[] keyValue = option.split("\\|");
-
-            if (keyValue.length == 2) {
-                String key = keyValue[0].trim();
-                String value = keyValue[1].trim();
-                optionsMap.put(key, value);
-            }
-        }
-		for (org.hl7.fhir.r4.model.Identifier fhirIdentifier : identifiers) {
-
-			if(fhirIdentifier.getSystem() != null && optionsMap.get(fhirIdentifier.getSystem()) != null){
-				
-				PatientIdentifier pi = new PatientIdentifier();
-				pi.setIdentifier(fhirIdentifier.getValue());
-				
-				pi.setIdentifierType(Context.getPatientService().getPatientIdentifierTypeByUuid(
-				    optionsMap.get(fhirIdentifier.getSystem())));
-
-				pi.setLocation(Context.getLocationService().getDefaultLocation());
-				
-				switch (fhirIdentifier.getUse()) {
-					case OFFICIAL:
-						pi.setPreferred(true);
-						break;
-					default:
-						pi.setPreferred(false);
-						break;
-				}
-				
-				BindException piErrors = new BindException(pi, "patientIdentifier");
-				new PatientIdentifierValidator().validate(pi, piErrors);
-				if (piErrors.hasErrors()) {
-					log.warn(piErrors.getMessage());
-					resultsMap.put("error", "Error validating identifiers");
-					return resultsMap;
-				}
-				p.addIdentifier(pi);
-			}
-			
-		}
-		
-		Patient patient = Context.getPatientService().savePatient(p);
-		resultsMap.put("success", patient.getPatientId());
+		resultsMap.put("success", CRIdentifier);
 		
 		return resultsMap;
-		
 	}
 	
 	/**

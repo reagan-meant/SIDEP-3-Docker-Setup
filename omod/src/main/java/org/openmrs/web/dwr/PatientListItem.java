@@ -51,6 +51,10 @@ public class PatientListItem extends PersonListItem {
 				identifier = patientIdentifier.getIdentifier();
 				// get patient's identifiers
 				for (PatientIdentifier pi : patient.getIdentifiers()) {
+					if (pi.getIdentifierType().getUuid().equals("43a6e699-c2b8-4d5f-9e7f-cf19448d59b7")) {
+						clientRegistryId = pi.getIdentifier();
+					}
+					
 					if (!pi.getIdentifier().equals(identifier)) {
 						if (!"".equals(otherIdentifiers)) {
 							otherIdentifiers += ",";
