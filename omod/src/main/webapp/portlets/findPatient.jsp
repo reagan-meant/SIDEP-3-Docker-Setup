@@ -246,7 +246,6 @@
 
 								$jdialog.html("<p>Given Name: " + data.givenName + "</p>" +
 									"<p>Identifier: " + data.identifier + "</p>" +
-									"<p>CR Identifier: " + data.clientRegistryId + "</p>" +
 									"<p>Family Name: " + data.familyName + "</p>" +
 									"<p>Birth Date: " + data.birthdateString + "</p>" +
 									"<p>Gender: " + data.gender + "</p>");

@@ -157,13 +157,12 @@ public class DWRPatientService implements GlobalPropertyListener {
 						.map(patientLink -> patientLink.getOther())
 						.collect(Collectors.toList());
 
-				// Print the link references
 				for (Reference link : links) {
 					CRUID = extractUUID(link.getReference());
 				}
 
 				if (CRUID != null && !patientList.stream()
-						.anyMatch(obj -> CRUID.equals(((PatientListItem) obj).getClientRegistryId()))) {
+   						.anyMatch(obj -> ((PatientListItem) obj).getclientRegistryUId().contains(CRUID))) {
 
 					PatientListItem PatientLI = new PatientListItem();
 					// Set patient identifier

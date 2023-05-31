@@ -721,11 +721,9 @@ public class ShortPatientFormController {
         .map(patientLink -> patientLink.getOther())
         .collect(Collectors.toList());
 		String CRUID = null;
-		// Print the link references
+
 		for (Reference link : links) {
-			System.out.println("Link Reference: " + link.getReference());
 			CRUID = extractUUID(link.getReference());
-			System.out.println(CRUID);
 		}
 		//Add null checker for attribute CRUID
 		PersonAttributeType type = Context.getPersonService().getPersonAttributeTypeByUuid("793a8d9f-63c6-4edd-a321-53b23165be50");
@@ -832,14 +830,15 @@ public class ShortPatientFormController {
 			}
 			
 		}
-		PatientIdentifier pi = new PatientIdentifier();
-		pi.setIdentifier(CRUID);
-		pi.setIdentifierType(Context.getPatientService().getPatientIdentifierTypeByUuid("43a6e699-c2b8-4d5f-9e7f-cf19448d59b7"));
-		pi.setLocation(Context.getLocationService().getDefaultLocation());
-		pi.setPreferred(false);
+		if(CRUID != null){
+			PatientIdentifier pi = new PatientIdentifier();
+			pi.setIdentifier(CRUID);
+			pi.setIdentifierType(Context.getPatientService().getPatientIdentifierTypeByUuid("43a6e699-c2b8-4d5f-9e7f-cf19448d59b7"));
+			pi.setLocation(Context.getLocationService().getDefaultLocation());
+			pi.setPreferred(false);
 
-		p.addIdentifier(pi);
-
+			p.addIdentifier(pi);
+		}
 		//Patient patient = Context.getPatientService().savePatient(p);
 		//resultsMap.put("success", patient.getPatientId());
 		
