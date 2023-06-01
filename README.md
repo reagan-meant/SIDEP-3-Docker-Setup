@@ -60,16 +60,16 @@ ulimits:
       nofile:
         soft: 65536
         hard: 65536
-`
+`    
 Follow the blog here: https://www.gitpod.io/blog/local-app to enable localhost on your machine
 
 ### Deploying with ansible to remote server
-Install ansible on the host machine following steps here https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html
-Ensure the public key is already added to the remote server
-Update the path to your private key on the variable ansible_ssh_private_key_file
-Update the inventory.ini file with the host addresses
-Run the command below in the distribution
-Enter password of the private key when prompted
+Install ansible on the host machine following steps here https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html    
+Ensure the public key is already added to the remote server    
+Update the path to your private key on the variable ansible_ssh_private_key_file    
+Update the inventory.ini file with the host addresses    
+Run the command below in the distribution    
+Enter password of the private key when prompted    
 
 ```sh
 cd deployment
