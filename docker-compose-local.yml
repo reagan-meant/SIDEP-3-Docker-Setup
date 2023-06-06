@@ -103,15 +103,7 @@ services:
     image: ghcr.io/i-tech-uw/openhim-config:v0.0.0
     volumes:
       - ./configs/openhim/test-openhim-config.json:/app/test-openhim-config.json
-
-
-# Hapi-FHIR -  SHR
-  hapi-fhir-jpaserver-starter:
-    image: openmrsinfra/openmrs-hapi-fhir:openmrs-fhir-plir_cql
-    container_name: hapi-fhir-shr
-    restart: on-failure
-    ports:
-      - "8090:8080"   
+ 
 
 ###
   # OpenCR - Client Registry
@@ -119,7 +111,7 @@ services:
   opencr:
     container_name: opencr
     hostname: opencr
-    image: intrahealth/opencr:latest
+    image: intrahealth/opencr:8137ca7
     restart: unless-stopped
     environment:
       - NODE_ENV=docker
@@ -183,7 +175,7 @@ services:
       - KEYSTORE_PW="kspass"
       - TRUSTSTORE_PW="tspass"
     volumes:
-      - cert-volume:/etc/openelis-global
+      - key_trust-store-volume:/etc/openelis-global
       - keys-vol:/etc/ssl/private/
       - certs-vol:/etc/ssl/certs/
 
@@ -221,7 +213,7 @@ services:
         # context.xml doesn't seem to be able to pick up environment variables directly, so we are passing them in as CATALINA_OPTS
       - CATALINA_OPTS= -Ddatasource.url=jdbc:postgresql://database:5432/clinlims -Ddatasource.username=clinlims -Ddatasource.password=clinlims
     volumes:
-      - cert-volume:/etc/openelis-global
+      - key_trust-store-volume:/etc/openelis-global
       # -  openelis-plugins-data:/var/lib/openelis-global/plugins
       - ./configs/openelis/tomcat/oe_server.xml:/usr/local/tomcat/conf/server.xml
     secrets:
@@ -241,6 +233,7 @@ services:
       - hapi.fhir.allow_external_references=true
   
 
+  # Hapi-FHIR -  SHR
   fhir.openelis.org.remote:
     container_name: openelis-remote-source
     image: hapiproject/hapi:v5.5.1
@@ -261,6 +254,6 @@ secrets:
 
 volumes:
   db-data:
-  cert-volume:
+  key_trust-store-volume:
   certs-vol:
   keys-vol:       
