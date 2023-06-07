@@ -50,6 +50,12 @@ docker compose -f docker-compose-local.yml up -d
 | OpenCR    | http://localhost:3000/crux  |  root@intrahealth.org  : intrahealth|
 | OpenELIS | https://localhost:8443/OpenELIS-Global/ |    admin : adminADMIN!| 
 
+### Restart the Streaming pipeline to work Properly
+After spinning up the Sigdep3 , restart the Streaming pipeline Stream all Changes to the SHR
+```
+docker restart streaming-pipeline
+```
+
 
 ### Possible challenges
 Ensure the .db folder at the root has permissions to allow docker to write files
