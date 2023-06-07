@@ -51,7 +51,7 @@ docker compose -f docker-compose-local.yml up -d
 | OpenELIS | https://localhost:8443/OpenELIS-Global/ |    admin : adminADMIN!| 
 
 ### Restart the Streaming pipeline to work Properly
-After spinning up the Sigdep3 , restart the Streaming pipeline Stream all Changes to the SHR
+After spinning up the Sigdep3 , restart the Streaming pipeline to Stream all Changes to the SHR
 ```
 docker restart streaming-pipeline
 ```
