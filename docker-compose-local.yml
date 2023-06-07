@@ -47,7 +47,9 @@ services:
       timeout: 20s
       retries: 10
     volumes:
+      - ./configs/sigdep3/mysql.cnf:/etc/mysql/conf.d/custom.cnf  # mysql config preconfigured to allow binlog/debezium
       - ./configs/sigdep3/init-db:/docker-entrypoint-initdb.d
+    
       # uncomment to persist the volumes on the Host file system
       #- .db/sigdep3:/var/lib/mysql
     ports:
@@ -103,15 +105,7 @@ services:
     image: ghcr.io/i-tech-uw/openhim-config:v0.0.0
     volumes:
       - ./configs/openhim/test-openhim-config.json:/app/test-openhim-config.json
-
-
-# Hapi-FHIR -  SHR
-  hapi-fhir-jpaserver-starter:
-    image: openmrsinfra/openmrs-hapi-fhir:openmrs-fhir-plir_cql
-    container_name: hapi-fhir-shr
-    restart: on-failure
-    ports:
-      - "8090:8080"   
+ 
 
 ###
   # OpenCR - Client Registry
@@ -119,7 +113,7 @@ services:
   opencr:
     container_name: opencr
     hostname: opencr
-    image: intrahealth/opencr:latest
+    image: intrahealth/opencr:8137ca7
     restart: unless-stopped
     environment:
       - NODE_ENV=docker
@@ -183,7 +177,7 @@ services:
       - KEYSTORE_PW="kspass"
       - TRUSTSTORE_PW="tspass"
     volumes:
-      - cert-volume:/etc/openelis-global
+      - key_trust-store-volume:/etc/openelis-global
       - keys-vol:/etc/ssl/private/
       - certs-vol:/etc/ssl/certs/
 
@@ -221,7 +215,7 @@ services:
         # context.xml doesn't seem to be able to pick up environment variables directly, so we are passing them in as CATALINA_OPTS
       - CATALINA_OPTS= -Ddatasource.url=jdbc:postgresql://database:5432/clinlims -Ddatasource.username=clinlims -Ddatasource.password=clinlims
     volumes:
-      - cert-volume:/etc/openelis-global
+      - key_trust-store-volume:/etc/openelis-global
       # -  openelis-plugins-data:/var/lib/openelis-global/plugins
       - ./configs/openelis/tomcat/oe_server.xml:/usr/local/tomcat/conf/server.xml
     secrets:
@@ -241,6 +235,7 @@ services:
       - hapi.fhir.allow_external_references=true
   
 
+  # Hapi-FHIR -  SHR
   fhir.openelis.org.remote:
     container_name: openelis-remote-source
     image: hapiproject/hapi:v5.5.1
@@ -251,6 +246,35 @@ services:
       - hapi.fhir.auto_create_placeholder_reference_targets=true
       - hapi.fhir.allow_placeholder_references=true
       - hapi.fhir.allow_external_references=true
+
+  # Streaming Pipeline
+  streaming-pipeline: 
+    image: openmrsinfra/openmrs-fhir-analytics:plir-binlog
+    container_name: streaming-pipeline
+    healthcheck:
+      test: "exit 0"
+    depends_on:
+      sigdep-db:
+        condition: service_healthy  
+    volumes:
+      - ./configs/streaming-pipeline/config.json:/deployments/config.json
+      # data is the directory which you want to persist the generated parquet files
+      # - ./configs/streaming-pipeline/parquet:/tmp
+    environment:
+      - OPENMRS_URL=http://sigdep3:8080/openmrs
+      - OPENMRS_USERNAME=admin
+      - OPENMRS_PASSWORD=Dppeis@pnls_16
+      - SINK_URL=http://openhim-core:5001/fhir/
+      - SINK_USERNAME=dbezium
+      - SINK_PASSWORD=dbezium
+      - JDBC_FETCH_SIZE=10000
+      - JDBC_MAX_POOL_SIZE=50
+      - JDBC_INITIAL_POOL_SIZE=10
+      - JDBC_DRIVER_CLASS=com.mysql.cj.jdbc.Driver
+      - JDBC_URL=jdbc:mysql://sigdep-db:3306/openmrs
+      # the 2 variable below should be same as volume mappings above
+      #- PARQUET_PATH=
+      - FHIR_DEBEZIUM_CONFIG_PATH=/deployments/config.json    
   
 
 secrets:
@@ -261,6 +285,6 @@ secrets:
 
 volumes:
   db-data:
-  cert-volume:
+  key_trust-store-volume:
   certs-vol:
   keys-vol:       

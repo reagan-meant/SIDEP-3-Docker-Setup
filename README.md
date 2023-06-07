@@ -19,30 +19,42 @@ git lfs checkout
 
 git lfs pull
 
-docker compose up -d
 ```
 In the file found at "./configs/opencr/config.json" change the
-installed flag under app to false to load configs for Opencr
+installed flag under app to false to load configs for Opencr  
+```
 "app": {
     "port": 3000,
     "installed": false
 }
+```
 
 
 ### Resetting and Clearing OpenCR 
 ```sh
 docker stop opencr opencr-fhir es
 docker system prune --volumes
-docker compose up -d 
+```
+## Local setup
+
+Spin up the services
+
+```
+docker compose -f docker-compose-local.yml up -d
 ```
 ### You should be able to acces the Sigdep (OpenMRS) ,OpenHIM and Hapi-Fhir instances  at the following urls
 | Instance  |     URL       | credentials (user : password)|
 |---------- |:-------------:|------:                       |
 | Sigdep (OpenMRS)   | http://localhost:8080/openmrs  |  admin : Dppeis@pnls_16 |
 | OpenHIM   | http://localhost:9000  |  root@openhim.org : openhim |
-| Hapi FHir | http://localhost:8090 |    hapi : hapi123| 
 | OpenCR    | http://localhost:3000/crux  |  root@intrahealth.org  : intrahealth|
-| OpenELIS | https://localhost/OpenELIS-Global/ |    admin : adminADMIN!| 
+| OpenELIS | https://localhost:8443/OpenELIS-Global/ |    admin : adminADMIN!| 
+
+### Restart the Streaming pipeline to work Properly
+After spinning up the Sigdep3 , restart the Streaming pipeline to Stream all Changes to the SHR
+```
+docker restart streaming-pipeline
+```
 
 
 ### Possible challenges
