@@ -67,12 +67,20 @@
       ],
       "displayName": "Internal ID"
     },
+    "pat_nationalId": {
+      "uri": "http://openelis-global.org/pat_nationalId",
+      "displayName": "National Id"
+    },
     "art": {
       "uri": "http://clientregistry.org/artnumber",
       "displayName": "ART ID"
     },
     "upi": {
-      "uri": "http://cote.divore/ext/identifier/UPI",
+      "uri": [
+        "http://cote.divore/ext/identifier/UPI",
+        "https://openmrs.org/UPI",
+        "http://35.85.179.171/UPI"
+      ],
       "displayName": "UPID"
     },
     "openmrs": {
