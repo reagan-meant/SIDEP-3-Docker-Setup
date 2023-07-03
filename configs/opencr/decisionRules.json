@@ -51,7 +51,7 @@
     "fields": {
       "upi": {
         "algorithm": "exact",
-        "fhirpath": "identifier.where(system='http://cote.divore/ext/identifier/UPI').value",
+        "fhirpath": "identifier.where(system='https://openmrs.org/UPI').value",
         "espath": "upi",
         "null_handling": "conservative",
         "null_handling_both": "conservative"
@@ -92,6 +92,6 @@
       }
     },
     "potentialMatchThreshold": 4,
-    "autoMatchThreshold": 6
+    "autoMatchThreshold": 5
   }]
 }
