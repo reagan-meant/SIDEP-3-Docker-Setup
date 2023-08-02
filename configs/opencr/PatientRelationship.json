@@ -55,6 +55,19 @@
             },
             {
               "url": "name",
+              "valueString": "name.where(use='official').first().given"
+            }
+          ]
+        },
+        {
+          "url": "http://ihris.org/fhir/StructureDefinition/iHRISReportElement",
+          "extension": [
+            {
+              "url": "label",
+              "valueString": "middle"
+            },
+            {
+              "url": "name",
               "valueString": "name.where(use='official').last().given"
             }
           ]
@@ -77,11 +90,37 @@
           "extension": [
             {
               "url": "label",
-              "valueString": "phone"
+              "valueString": "family"
             },
             {
               "url": "name",
-              "valueString": "telecom.where(system='phone').value"
+              "valueString": "name.where(use='official').family"
+            }
+          ]
+        },
+        {
+          "url": "http://ihris.org/fhir/StructureDefinition/iHRISReportElement",
+          "extension": [
+            {
+              "url": "label",
+              "valueString": "homephone"
+            },
+            {
+              "url": "name",
+              "valueString": "telecom.where(use='home').value"
+            }
+          ]
+        },
+        {
+          "url": "http://ihris.org/fhir/StructureDefinition/iHRISReportElement",
+          "extension": [
+            {
+              "url": "label",
+              "valueString": "cellphone"
+            },
+            {
+              "url": "name",
+              "valueString": "telecom.where(use='mobile').value"
             }
           ]
         },
