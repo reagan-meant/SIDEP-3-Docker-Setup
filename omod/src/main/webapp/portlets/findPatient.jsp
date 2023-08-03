@@ -217,7 +217,7 @@
 					// This method will be called by DWR with the search results
 					// Do something with the search results here, such as displaying them on the page
 					if (result.hasOwnProperty("success")){
-						document.location = "${model.postURL}?patientId=" + result["success"] + "&phrase=" + lastSearch;
+						document.location = "admin/patients/shortPatientForm.form?fhirPatientId=" + result["success"];
 
 					} else {
 						alert("Error: " + result["error"]);
@@ -235,7 +235,7 @@
 							buttons: {
 								"Save": function() {
 								$j(this).dialog("close");
-								DWRPatientService.createPatient(data.identifier, handleSaveResults);
+								DWRPatientService.createPatient(data.clientRegistryId, handleSaveResults);
 
 								},
 								"Cancel": function() {

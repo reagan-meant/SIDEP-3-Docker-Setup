@@ -11,13 +11,16 @@ package org.openmrs.web.controller.patient;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.hl7.fhir.r4.model.Reference;
 import org.openmrs.Concept;
 import org.openmrs.Location;
 import org.openmrs.Obs;
@@ -28,14 +31,17 @@ import org.openmrs.PatientIdentifierType.LocationBehavior;
 import org.openmrs.Person;
 import org.openmrs.PersonAddress;
 import org.openmrs.PersonAttribute;
+import org.openmrs.PersonAttributeType;
 import org.openmrs.PersonName;
 import org.openmrs.Relationship;
 import org.openmrs.RelationshipType;
+import org.openmrs.User;
 import org.openmrs.api.APIException;
 import org.openmrs.api.context.Context;
 import org.openmrs.util.LocationUtility;
 import org.openmrs.util.OpenmrsConstants;
 import org.openmrs.util.OpenmrsUtil;
+import org.openmrs.validator.PatientIdentifierValidator;
 import org.openmrs.validator.PatientValidator;
 import org.openmrs.web.WebConstants;
 import org.openmrs.web.controller.person.PersonFormController;
@@ -51,6 +57,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.WebRequest;
+
+import ca.uhn.fhir.rest.client.api.IGenericClient;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This controller is used for the "mini"/"new"/"short" patient form. Only key/important attributes
@@ -79,13 +89,16 @@ public class ShortPatientFormController {
 	
 	@ModelAttribute("patientModel")
 	public ShortPatientModel getPatientModel(@RequestParam(value = "patientId", required = false) Integer patientId,
-	        ModelMap model, WebRequest request) {
+	        @RequestParam(value = "fhirPatientId", required = false) String fhirPatientId, ModelMap model, WebRequest request)
+	        throws Exception {
 		Patient patient;
 		if (patientId != null) {
 			patient = Context.getPatientService().getPatientOrPromotePerson(patientId);
 			if (patient == null) {
 				throw new IllegalArgumentException("No patient or person with the given id");
 			}
+		} else if (fhirPatientId != null) {
+			patient = createPatient(fhirPatientId);
 		} else {
 			// we may have some details to add to a blank patient
 			patient = new Patient();
@@ -669,5 +682,167 @@ public class ShortPatientFormController {
 		}
 		
 		return StringUtils.join(tempName, " ");
+	}
+	
+	public static String extractUUID(String url) {
+		// Regular expression pattern for UUID
+		Pattern pattern = Pattern.compile(".*/([a-fA-F0-9\\-]+)$");
+		Matcher matcher = pattern.matcher(url);
+		
+		if (matcher.find()) {
+			return matcher.group(1);
+		} else {
+			// UUID not found
+			return null;
+		}
+	}
+	
+	public Patient createPatient(String CRIdentifier) throws Exception {
+		
+		// Get patient
+		// IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
+		IGenericClient client = Context.getRegisteredComponent("clientRegistryFhirClient", IGenericClient.class);
+		
+		// Patient patient = client.read()
+		org.hl7.fhir.r4.model.Patient fhirPatient = client.read()
+		
+		.resource(org.hl7.fhir.r4.model.Patient.class).withId(CRIdentifier).execute();
+		
+		User user = Context.getAuthenticatedUser();
+		Patient p = new Patient();
+		p.setPersonCreator(user);
+		p.setPersonDateCreated(new Date());
+		p.setPersonChangedBy(user);
+		p.setPersonDateChanged(new Date());
+		p.setUuid(CRIdentifier);
+
+		List<Reference> links = fhirPatient.getLink()
+        .stream()
+        .map(patientLink -> patientLink.getOther())
+        .collect(Collectors.toList());
+		String CRUID = null;
+
+		for (Reference link : links) {
+			CRUID = extractUUID(link.getReference());
+		}
+		//Add null checker for attribute CRUID
+		PersonAttributeType type = Context.getPersonService().getPersonAttributeTypeByUuid("793a8d9f-63c6-4edd-a321-53b23165be50");
+		PersonAttribute attribute = new PersonAttribute(type, CRUID);
+		p.addAttribute(attribute);
+
+		// Set patient name
+		PersonName name = new PersonName();
+		List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();
+		if (!givenNames.isEmpty()) {
+			
+			StringBuilder sb = new StringBuilder();
+			for (int i = 1; i < givenNames.size(); i++) {
+				sb.append(givenNames.get(i).getValue()).append(" ");
+			}
+			
+			if (sb.length() > 0) {
+				sb.deleteCharAt(sb.length() - 1);
+			}
+			
+			name = new PersonName(givenNames.get(0).getValue(), sb.toString(), fhirPatient.getNameFirstRep().getFamily());
+			
+		}
+		
+		switch (fhirPatient.getBirthDateElement().getPrecision()) {
+			case DAY:
+				p.setBirthdateEstimated(false);
+				break;
+			case MONTH:
+			case YEAR:
+				p.setBirthdateEstimated(true);
+				break;
+		}
+		
+		// Set patient gender
+		if (fhirPatient.hasGender()) {
+			switch (fhirPatient.getGender()) {
+				case MALE:
+					p.setGender("M");
+					break;
+				case FEMALE:
+					p.setGender("F");
+					break;
+				case OTHER:
+					p.setGender("O");
+					break;
+				case UNKNOWN:
+					p.setGender("U");
+					break;
+			}
+		}
+		
+		name.setCreator(user);
+		name.setDateCreated(new Date());
+		name.setChangedBy(user);
+		name.setDateChanged(new Date());
+		p.addName(name);
+		p.setBirthdate(fhirPatient.getBirthDate());
+		// Get the identifiers of the patient
+		List<org.hl7.fhir.r4.model.Identifier> identifiers = fhirPatient.getIdentifier();
+		String fhirIdsExp = "http://clientregistry.org/artnumber|6b6e9d94-015b-48f6-ac95-da239512ff91, http://clientregistry.org/openmrs|3825d4f8-1afd-4da4-b30f-e0ff4cd256a5";
+		String fhirIds = Context.getAdministrationService().getGlobalProperty("fhirIds", fhirIdsExp);
+		Map<String, String> optionsMap = new HashMap<>();
+		String[] options  = fhirIds.split(",");
+
+        //String[] options = fhirIds.split("\\|");
+        for (String option : options) {
+			String[] keyValue = option.split("\\|");
+
+            if (keyValue.length == 2) {
+                String key = keyValue[0].trim();
+                String value = keyValue[1].trim();
+                optionsMap.put(key, value);
+            }
+        }
+		for (org.hl7.fhir.r4.model.Identifier fhirIdentifier : identifiers) {
+
+			if(fhirIdentifier.getSystem() != null && optionsMap.get(fhirIdentifier.getSystem()) != null){
+				
+				PatientIdentifier pi = new PatientIdentifier();
+				pi.setIdentifier(fhirIdentifier.getValue());
+				
+				pi.setIdentifierType(Context.getPatientService().getPatientIdentifierTypeByUuid(
+				    optionsMap.get(fhirIdentifier.getSystem())));
+
+				pi.setLocation(Context.getLocationService().getDefaultLocation());
+				
+				switch (fhirIdentifier.getUse()) {
+					case OFFICIAL:
+						pi.setPreferred(true);
+						break;
+					default:
+						pi.setPreferred(false);
+						break;
+				}
+				
+				BindException piErrors = new BindException(pi, "patientIdentifier");
+				new PatientIdentifierValidator().validate(pi, piErrors);
+				if (piErrors.hasErrors()) {
+					log.warn(piErrors.getMessage());
+					
+				}
+				p.addIdentifier(pi);
+			}
+			
+		}
+		if(CRUID != null){
+			PatientIdentifier pi = new PatientIdentifier();
+			pi.setIdentifier(CRUID);
+			pi.setIdentifierType(Context.getPatientService().getPatientIdentifierTypeByUuid("43a6e699-c2b8-4d5f-9e7f-cf19448d59b7"));
+			pi.setLocation(Context.getLocationService().getDefaultLocation());
+			pi.setPreferred(false);
+
+			p.addIdentifier(pi);
+		}
+		//Patient patient = Context.getPatientService().savePatient(p);
+		//resultsMap.put("success", patient.getPatientId());
+		
+		return p;
+		
 	}
 }

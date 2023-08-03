@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Vector;
 import java.time.Period;
@@ -27,16 +26,14 @@ import org.openmrs.Concept;
 import org.openmrs.GlobalProperty;
 import org.openmrs.Location;
 import org.openmrs.Patient;
-import org.openmrs.User;
-import org.apache.commons.lang.StringUtils;
 import java.util.stream.Collectors;
 import org.hl7.fhir.r4.model.Bundle;
+
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 
 import org.openmrs.PatientIdentifier;
 import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonAddress;
-import org.openmrs.PersonName;
 import org.openmrs.api.APIAuthenticationException;
 import org.openmrs.api.APIException;
 import org.openmrs.api.ConceptService;
@@ -54,10 +51,10 @@ import org.openmrs.module.legacyui.api.LegacyUIService;
 import org.openmrs.patient.IdentifierValidator;
 import org.openmrs.patient.UnallowedIdentifierException;
 import org.openmrs.util.OpenmrsConstants;
-import org.openmrs.validator.PatientIdentifierValidator;
 import org.openmrs.web.WebUtil;
-import org.springframework.validation.BindException;
-import org.openmrs.module.legacyui.FhirLegacyUIConfig;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.hl7.fhir.r4.model.Reference;
 
 /**
  * DWR patient methods. The methods in here are used in the webapp to get data from the database via
@@ -72,6 +69,8 @@ public class DWRPatientService implements GlobalPropertyListener {
 	private static Integer maximumResults;
 	
 	private List<org.hl7.fhir.r4.model.Patient> mypatients;
+	
+	private String CRUID = "";
 	
 	/**
 	 * Search on the <code>searchValue</code>. If a number is in the search string, do an identifier
@@ -111,30 +110,36 @@ public class DWRPatientService implements GlobalPropertyListener {
 	 * @throws Exception
 	 * @since 1.8
 	 */
-	public Collection<Object> findBatchOfPatients(String searchValue, boolean includeVoided, Integer start, Integer length)
-	        throws Exception {
+	public Collection<Object> findBatchOfPatients(String searchValue, boolean includeVoided, Integer start,
+			Integer length)
+			throws Exception {
 		if (maximumResults == null) {
 			setMaximumResults(getMaximumSearchResults());
 		}
 		if (length != null && length > maximumResults) {
 			length = maximumResults;
 		}
-		
+
 		// the list to return
 		List<Object> patientList = new Vector<Object>();
 
 		PatientService ps = Context.getPatientService();
 		Collection<Patient> patients;
-		
+
 		try {
 			patients = ps.getPatients(searchValue, includeVoided, start, length);
-		}
-		catch (APIAuthenticationException e) {
-			patientList.add(Context.getMessageSourceService().getMessage("Patient.search.error") + " - " + e.getMessage());
+		} catch (APIAuthenticationException e) {
+			patientList
+					.add(Context.getMessageSourceService().getMessage("Patient.search.error") + " - " + e.getMessage());
 			return patientList;
 		}
-		
-		patientList = new Vector<Object>(patients.size() + this.mypatients.size());
+
+		if (this.mypatients != null && this.mypatients.size() > 0) {
+			patientList = new Vector<Object>(patients.size() + this.mypatients.size());
+
+		} else {
+			patientList = new Vector<Object>(patients.size());
+		}
 
 		for (Patient p : patients) {
 			PatientListItem PatientLI = new PatientListItem(p, searchValue);
@@ -144,94 +149,114 @@ public class DWRPatientService implements GlobalPropertyListener {
 			patientList.add(htmlSafePatientLI);
 		}
 
-		for (org.hl7.fhir.r4.model.Patient fhirPatient : this.mypatients) {
+		if (this.mypatients != null && this.mypatients.size() > 0) {
+			for (org.hl7.fhir.r4.model.Patient fhirPatient : this.mypatients) {
 
-			if ( !patientList.stream().anyMatch(obj -> ((PatientListItem)obj).getIdentifier().equals(fhirPatient.getIdentifierFirstRep().getValue()))){
-				PatientListItem PatientLI = new PatientListItem();
-			
-				// Set patient identifier
-				PatientLI.setIdentifier(fhirPatient.getIdentifierFirstRep().getValue());
-				
-				// Set patient name
-				List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();
-				if (!givenNames.isEmpty()) {
-					PatientLI.setGivenName(WebUtil.escapeHTML(givenNames.get(0).getValue()));
-					
-					StringBuilder sb = new StringBuilder();
-					for (int i = 1; i < givenNames.size(); i++) {
-						sb.append(givenNames.get(i).getValue()).append(" ");
+				List<Reference> links = fhirPatient.getLink()
+						.stream()
+						.map(patientLink -> patientLink.getOther())
+						.collect(Collectors.toList());
+
+				for (Reference link : links) {
+					CRUID = extractUUID(link.getReference());
+				}
+
+				if (CRUID != null && !patientList.stream()
+   						.anyMatch(obj -> ((PatientListItem) obj).getclientRegistryUId().contains(CRUID))) {
+
+					PatientListItem PatientLI = new PatientListItem();
+					// Set patient identifier
+					PatientLI.setIdentifier(fhirPatient.getIdentifierFirstRep().getValue());
+
+					// set CR Id
+					PatientLI.setClientRegistryId(fhirPatient.getIdElement().getIdPart());
+					// Set patient name
+					List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();
+					if (!givenNames.isEmpty()) {
+						PatientLI.setGivenName(WebUtil.escapeHTML(givenNames.get(0).getValue()));
+
+						StringBuilder sb = new StringBuilder();
+						for (int i = 1; i < givenNames.size(); i++) {
+							sb.append(givenNames.get(i).getValue()).append(" ");
+						}
+
+						if (sb.length() > 0) {
+							sb.deleteCharAt(sb.length() - 1);
+						}
+
+						PatientLI.setMiddleName(WebUtil.escapeHTML(sb.toString()));
+
 					}
-					
-					if (sb.length() > 0) {
-						sb.deleteCharAt(sb.length() - 1);
+
+					PatientLI.setFamilyName(WebUtil.escapeHTML(fhirPatient.getNameFirstRep().getFamily()));
+					// Set patient date of birth
+					if (fhirPatient.hasBirthDate()) {
+						PatientLI.setBirthdate(fhirPatient.getBirthDate());
+						PatientLI.setBirthdateString(WebUtil.formatDate(fhirPatient.getBirthDate()));
 					}
-					
-					PatientLI.setMiddleName(WebUtil.escapeHTML(sb.toString()));
-					
-				}
-				
-				PatientLI.setFamilyName(WebUtil.escapeHTML(fhirPatient.getNameFirstRep().getFamily()));
-				// Set patient date of birth
-				if (fhirPatient.hasBirthDate()) {
-					PatientLI.setBirthdate(fhirPatient.getBirthDate());
-					PatientLI.setBirthdateString(WebUtil.formatDate(fhirPatient.getBirthDate()));
-				}
-				
-				switch (fhirPatient.getBirthDateElement().getPrecision()) {
-					case DAY:
-						PatientLI.setBirthdateEstimated(false);
-						break;
-					case MONTH:
-					case YEAR:
-						PatientLI.setBirthdateEstimated(true);
-						break;
-				}
-				// Set patient Age
-				LocalDate today = LocalDate.now();
-				LocalDate localBirthDate = fhirPatient.getBirthDate().toInstant().atZone(java.time.ZoneId.systemDefault())
-						.toLocalDate();
-				Period period = Period.between(localBirthDate, today);
-				PatientLI.setAge(period.getYears());
-				
-				// Set patient gender
-				if (fhirPatient.hasGender()) {
-					switch (fhirPatient.getGender()) {
-						case MALE:
-							PatientLI.setGender("M");
+
+					switch (fhirPatient.getBirthDateElement().getPrecision()) {
+						case DAY:
+							PatientLI.setBirthdateEstimated(false);
 							break;
-						case FEMALE:
-							PatientLI.setGender("F");
-							break;
-						case OTHER:
-							PatientLI.setGender("O");
-							break;
-						case UNKNOWN:
-							PatientLI.setGender("U");
+						case MONTH:
+						case YEAR:
+							PatientLI.setBirthdateEstimated(true);
 							break;
 					}
+					// Set patient Age
+					LocalDate today = LocalDate.now();
+					LocalDate localBirthDate = fhirPatient.getBirthDate().toInstant()
+							.atZone(java.time.ZoneId.systemDefault())
+							.toLocalDate();
+					Period period = Period.between(localBirthDate, today);
+					PatientLI.setAge(period.getYears());
+
+					// Set patient gender
+					if (fhirPatient.hasGender()) {
+						switch (fhirPatient.getGender()) {
+							case MALE:
+								PatientLI.setGender("M");
+								break;
+							case FEMALE:
+								PatientLI.setGender("F");
+								break;
+							case OTHER:
+								PatientLI.setGender("O");
+								break;
+							case UNKNOWN:
+								PatientLI.setGender("U");
+								break;
+						}
+					}
+					// Tag for patient from HAPI
+					PatientLI.setPatientPresent("Import");
+					patientList.add(PatientLI);
+
 				}
-				//Tag for patient from HAPI
-				PatientLI.setPatientPresent("Import");
-				patientList.add(PatientLI);
+
 			}
-		
 		}
-		
-		//no results found and a number was in the search --
-		//should check whether the check digit is correct.
-		if (this.mypatients.size() == 0 && patients.size() == 0 && searchValue.matches(".*\\d+.*")) {
-			
-			//Looks through all the patient identifier validators to see if this type of identifier
-			//is supported for any of them.  If it isn't, then no need to warn about a bad check
-			//digit.  If it does match, then if any of the validators validates the check digit
-			//successfully, then the user is notified that the identifier has been entered correctly.
-			//Otherwise, the user is notified that the identifier was entered incorrectly.
-			
+
+		// no results found and a number was in the search --
+		// should check whether the check digit is correct.
+		if (patientList.size() == 0 && searchValue.matches(".*\\d+.*")) {
+
+			// Looks through all the patient identifier validators to see if this type of
+			// identifier
+			// is supported for any of them. If it isn't, then no need to warn about a bad
+			// check
+			// digit. If it does match, then if any of the validators validates the check
+			// digit
+			// successfully, then the user is notified that the identifier has been entered
+			// correctly.
+			// Otherwise, the user is notified that the identifier was entered incorrectly.
+
 			Collection<IdentifierValidator> pivs = ps.getAllIdentifierValidators();
 			boolean shouldWarnUser = true;
 			boolean validCheckDigit = false;
 			boolean identifierMatchesValidationScheme = false;
-			
+
 			for (IdentifierValidator piv : pivs) {
 				try {
 					if (piv.isValid(searchValue)) {
@@ -239,24 +264,36 @@ public class DWRPatientService implements GlobalPropertyListener {
 						validCheckDigit = true;
 					}
 					identifierMatchesValidationScheme = true;
-				}
-				catch (UnallowedIdentifierException e) {
+				} catch (UnallowedIdentifierException e) {
 					log.error("Error while validating identifier", e);
 				}
 			}
-			
+
 			if (identifierMatchesValidationScheme) {
 				if (shouldWarnUser) {
 					patientList
-					        .add("<p style=\"color:red; font-size:big;\"><b>WARNING: Identifier has been typed incorrectly!  Please double check the identifier.</b></p>");
+							.add("<p style=\"color:red; font-size:big;\"><b>WARNING: Identifier has been typed incorrectly!  Please double check the identifier.</b></p>");
 				} else if (validCheckDigit) {
 					patientList
-					        .add("<p style=\"color:green; font-size:big;\"><b>This identifier has been entered correctly, but still no patients have been found.</b></p>");
+							.add("<p style=\"color:green; font-size:big;\"><b>This identifier has been entered correctly, but still no patients have been found.</b></p>");
 				}
 			}
 		}
-		
+
 		return patientList;
+	}
+	
+	public static String extractUUID(String url) {
+		// Regular expression pattern for UUID
+		Pattern pattern = Pattern.compile(".*/([a-fA-F0-9\\-]+)$");
+		Matcher matcher = pattern.matcher(url);
+		
+		if (matcher.find()) {
+			return matcher.group(1);
+		} else {
+			// UUID not found
+			return null;
+		}
 	}
 	
 	/**
@@ -274,51 +311,50 @@ public class DWRPatientService implements GlobalPropertyListener {
 	 * @throws APIException
 	 */
 	public Map<String, Object> findCountAndPatientsWithVoided(String searchValue, Integer start, Integer length,
-	        boolean getMatchCount, Boolean includeVoided) throws APIException {
-		
-		//Map to return
+			boolean getMatchCount, Boolean includeVoided) throws APIException {
+
+		// Map to return
 		Map<String, Object> resultsMap = new HashMap<String, Object>();
 		Collection<Object> objectList = new Vector<Object>();
-		
+
 		if (includeVoided == null) {
 			includeVoided = false;
 		}
-		
+
 		try {
 			PatientService ps = Context.getPatientService();
 			int patientCount = 0;
-			//if this is the first call
-			if (getMatchCount) {
-				IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
-		this.mypatients = client
-			.search()
-			.forResource(org.hl7.fhir.r4.model.Patient.class)
-			.where(org.hl7.fhir.r4.model.Patient.NAME.matches().value(searchValue))
-			.returnBundle(Bundle.class)
-			.execute()
-			.getEntry()
-			.stream()
-			.map(e -> (org.hl7.fhir.r4.model.Patient) e.getResource())
-			.collect(Collectors.toList());
-			//How do we search by partial identifiers and on all identifiers
-			List<org.hl7.fhir.r4.model.Patient> mypatientsByID = client
-			.search()
-			.forResource(org.hl7.fhir.r4.model.Patient.class)
-//			.where(org.hl7.fhir.r4.model.Patient.IDENTIFIER.exactly().systemAndIdentifier(LegacyUIConstants.CLIENT_REGISTRY_INTERNAL_ID_SYSTEM, searchValue))
-			.where(org.hl7.fhir.r4.model.Patient.IDENTIFIER.exactly().systemAndIdentifier("http://clientregistry.org/artnumber", searchValue))
-			.returnBundle(Bundle.class)
-			.execute()
-			.getEntry()
-			.stream()
-			.map(e -> (org.hl7.fhir.r4.model.Patient) e.getResource())
-			.collect(Collectors.toList());
-			this.mypatients.addAll(mypatientsByID);
 
+			// if this is the first call
+			if (getMatchCount) {
 				patientCount += ps.getCountOfPatients(searchValue, includeVoided);
-				patientCount += this.mypatients.size();
+
+				// IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
+				IGenericClient client = Context.getRegisteredComponent("clientRegistryFhirClient",
+						IGenericClient.class);
+
+				try {
+					this.mypatients = client
+							.search()
+							.forResource(org.hl7.fhir.r4.model.Patient.class)
+							.where(org.hl7.fhir.r4.model.Patient.NAME.matches().value(searchValue))
+							.returnBundle(Bundle.class)
+							.execute()
+							.getEntry()
+							.stream()
+							.map(e -> (org.hl7.fhir.r4.model.Patient) e.getResource())
+							.collect(Collectors.toList());
+					// How do we search by partial identifiers and on all identifiers
+
+					patientCount += this.mypatients.size();
+				} catch (Exception e) {
+					log.error("Error while attempting to reach server", e);
+
+				}
+
 				// if there are no results found and a number was not in the
-				// search and this is the first call, then do a decapitated search: 
-				//trim each word down to the first three characters and search again				
+				// search and this is the first call, then do a decapitated search:
+				// trim each word down to the first three characters and search again
 				if (patientCount == 0 && start == 0 && !searchValue.matches(".*\\d+.*")) {
 					String[] names = searchValue.split(" ");
 					StringBuilder newSearch = new StringBuilder("");
@@ -328,7 +364,7 @@ public class DWRPatientService implements GlobalPropertyListener {
 						}
 						newSearch.append(" ").append(name);
 					}
-					
+
 					String newSearchStr = newSearch.toString().trim();
 					if (!newSearchStr.equals(searchValue)) {
 						int newPatientCount = ps.getCountOfPatients(newSearchStr);
@@ -336,28 +372,32 @@ public class DWRPatientService implements GlobalPropertyListener {
 							// Send a signal to the core search widget to search again against newSearch
 							resultsMap.put("searchAgain", newSearchStr);
 							resultsMap.put(
-							    "notification",
-							    Context.getMessageSourceService().getMessage("searchWidget.noResultsFoundFor",
-							        new Object[] { searchValue, newSearchStr }, Context.getLocale()));
+									"notification",
+									Context.getMessageSourceService().getMessage("searchWidget.noResultsFoundFor",
+											new Object[] { searchValue, newSearchStr }, Context.getLocale()));
 						}
 					}
 				}
-				
-				//no results found and a number was in the search --
-				//should check whether the check digit is correct.
+
+				// no results found and a number was in the search --
+				// should check whether the check digit is correct.
 				else if (patientCount == 0 && searchValue.matches(".*\\d+.*")) {
-					
-					//Looks through all the patient identifier validators to see if this type of identifier
-					//is supported for any of them.  If it isn't, then no need to warn about a bad check
-					//digit.  If it does match, then if any of the validators validates the check digit
-					//successfully, then the user is notified that the identifier has been entered correctly.
-					//Otherwise, the user is notified that the identifier was entered incorrectly.
+
+					// Looks through all the patient identifier validators to see if this type of
+					// identifier
+					// is supported for any of them. If it isn't, then no need to warn about a bad
+					// check
+					// digit. If it does match, then if any of the validators validates the check
+					// digit
+					// successfully, then the user is notified that the identifier has been entered
+					// correctly.
+					// Otherwise, the user is notified that the identifier was entered incorrectly.
 
 					Collection<IdentifierValidator> pivs = ps.getAllIdentifierValidators();
 					boolean shouldWarnUser = true;
 					boolean validCheckDigit = false;
 					boolean identifierMatchesValidationScheme = false;
-					
+
 					for (IdentifierValidator piv : pivs) {
 						try {
 							if (piv.isValid(searchValue)) {
@@ -365,32 +405,34 @@ public class DWRPatientService implements GlobalPropertyListener {
 								validCheckDigit = true;
 							}
 							identifierMatchesValidationScheme = true;
+						} catch (UnallowedIdentifierException e) {
 						}
-						catch (UnallowedIdentifierException e) {}
 					}
-					
+
 					if (identifierMatchesValidationScheme) {
 						if (shouldWarnUser) {
 							resultsMap.put("notification",
-							    "<b>" + Context.getMessageSourceService().getMessage("Patient.warning.inValidIdentifier")
-							            + "<b/>");
+									"<b>" + Context.getMessageSourceService()
+											.getMessage("Patient.warning.inValidIdentifier")
+											+ "<b/>");
 						} else if (validCheckDigit) {
 							resultsMap.put("notification", "<b style=\"color:green;\">"
-							        + Context.getMessageSourceService().getMessage("Patient.message.validIdentifier")
-							        + "<b/>");
+									+ Context.getMessageSourceService().getMessage("Patient.message.validIdentifier")
+									+ "<b/>");
 						}
 					}
 				} else {
 
-					//ensure that count never exceeds this value because the API's service layer would never
-					//return more than it since it is limited in the DAO layer
+					// ensure that count never exceeds this value because the API's service layer
+					// would never
+					// return more than it since it is limited in the DAO layer
 					if (maximumResults == null) {
 						setMaximumResults(getMaximumSearchResults());
 					}
 					if (length != null && length > maximumResults) {
 						length = maximumResults;
 					}
-					
+
 					if (patientCount > maximumResults) {
 						patientCount = maximumResults;
 						if (log.isDebugEnabled()) {
@@ -399,23 +441,23 @@ public class DWRPatientService implements GlobalPropertyListener {
 						}
 					}
 				}
-				
+
 			}
-			
-			//if we have any matches or this isn't the first ajax call when the caller
-			//requests for the count
+
+			// if we have any matches or this isn't the first ajax call when the caller
+			// requests for the count
 			if (patientCount > 0 || !getMatchCount) {
 
 				objectList = findBatchOfPatients(searchValue, includeVoided, start, length);
 			}
-			
+
 			resultsMap.put("count", patientCount);
 			resultsMap.put("objectList", objectList);
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			log.error("Error while searching for patients", e);
 			objectList.clear();
-			objectList.add(Context.getMessageSourceService().getMessage("Patient.search.error") + " - " + e.getMessage());
+			objectList
+					.add(Context.getMessageSourceService().getMessage("Patient.search.error") + " - " + e.getMessage());
 			resultsMap.put("count", 0);
 			resultsMap.put("objectList", objectList);
 		}
@@ -473,8 +515,9 @@ public class DWRPatientService implements GlobalPropertyListener {
 	public Vector<Object> findPatientsByIdentifier(String[] identifiers) {
 		Vector<Object> patientList = new Vector<>();
 		for (String identifier : identifiers) {
-			List<PatientIdentifier> patientIdentifiers = Context.getPatientService().getPatientIdentifiers(identifier, null, null, null, true);
-			if(patientIdentifiers.size() > 0){
+			List<PatientIdentifier> patientIdentifiers = Context.getPatientService().getPatientIdentifiers(identifier,
+					null, null, null, true);
+			if (patientIdentifiers.size() > 0) {
 				patientList.add(new PatientListItem(patientIdentifiers.get(0).getPatient()));
 			}
 		}
@@ -532,7 +575,7 @@ public class DWRPatientService implements GlobalPropertyListener {
 		LocationService ls = Context.getLocationService();
 		Patient p = ps.getPatient(patientId);
 		PatientIdentifierType idType = ps.getPatientIdentifierTypeByName(identifierType);
-		//ps.updatePatientIdentifier(pi);
+		// ps.updatePatientIdentifier(pi);
 		Location location = ls.getLocation(identifierLocationId);
 		log.debug("idType=" + identifierType + "->" + idType + " , location=" + identifierLocationId + "->" + location
 		        + " identifier=" + identifier);
@@ -541,7 +584,8 @@ public class DWRPatientService implements GlobalPropertyListener {
 		id.setIdentifier(identifier);
 		id.setLocation(location);
 		
-		// in case we are editing, check to see if there is already an ID of this type and location
+		// in case we are editing, check to see if there is already an ID of this type
+		// and location
 		for (PatientIdentifier previousId : p.getActiveIdentifiers()) {
 			if (previousId.getIdentifierType().equals(idType) && previousId.getLocation().equals(location)) {
 				log.debug("Found equivalent ID: [" + idType + "][" + location + "][" + previousId.getIdentifier()
@@ -749,17 +793,17 @@ public class DWRPatientService implements GlobalPropertyListener {
 		String ret = "";
 		
 		/*
-		
-		if ( patientId != null && locationId != null ) {
-			Patient patient = Context.getPatientService().getPatient(patientId);
-			Location location = Context.getEncounterService().getLocation(locationId);
-			
-			if ( patient != null && location != null ) {
-				patient.setHealthCenter(location);
-				Context.getPatientService().updatePatient(patient);
-			}
-		}
-		*/
+		 * 
+		 * if ( patientId != null && locationId != null ) {
+		 * Patient patient = Context.getPatientService().getPatient(patientId);
+		 * Location location = Context.getEncounterService().getLocation(locationId);
+		 * 
+		 * if ( patient != null && location != null ) {
+		 * patient.setHealthCenter(location);
+		 * Context.getPatientService().updatePatient(patient);
+		 * }
+		 * }
+		 */
 		
 		return ret;
 	}
@@ -784,125 +828,12 @@ public class DWRPatientService implements GlobalPropertyListener {
 		setMaximumResults(OpenmrsConstants.GLOBAL_PROPERTY_PERSON_SEARCH_MAX_RESULTS_DEFAULT_VALUE);
 	}
 	
-	public Map<String, Object> createPatient(String identifier) throws ParseException, Exception {
-
+	public Map<String, Object> createPatient(String CRIdentifier) throws ParseException, Exception {
 		Map<String, Object> resultsMap = new HashMap<String, Object>();
-		//Get patient
-		IGenericClient client = new FhirLegacyUIConfig().getFhirClient();
-				org.hl7.fhir.r4.model.Patient fhirPatient = client
-				.search()
-				.forResource(org.hl7.fhir.r4.model.Patient.class)
-	//			.where(org.hl7.fhir.r4.model.Patient.IDENTIFIER.exactly().systemAndIdentifier(LegacyUIConstants.CLIENT_REGISTRY_INTERNAL_ID_SYSTEM, searchValue))
-				.where(org.hl7.fhir.r4.model.Patient.IDENTIFIER.exactly().systemAndIdentifier("http://clientregistry.org/artnumber", identifier))
-				.returnBundle(Bundle.class)
-				.execute()
-				.getEntry()
-				.stream()
-				.map(e -> (org.hl7.fhir.r4.model.Patient) e.getResource())
-				.collect(Collectors.toList()).get(0);
-
-		User user = Context.getAuthenticatedUser();
-		Patient p = new Patient();
-		p.setPersonCreator(user);
-		p.setPersonDateCreated(new Date());
-		p.setPersonChangedBy(user);
-		p.setPersonDateChanged(new Date());
-
-		// Set patient name
-		PersonName name = new PersonName();
-		List<org.hl7.fhir.r4.model.StringType> givenNames = fhirPatient.getNameFirstRep().getGiven();
-		if (!givenNames.isEmpty()) {
-			
-			StringBuilder sb = new StringBuilder();
-			for (int i = 1; i < givenNames.size(); i++) {
-				sb.append(givenNames.get(i).getValue()).append(" ");
-			}
-			
-			if (sb.length() > 0) {
-				sb.deleteCharAt(sb.length() - 1);
-			}
-			
-			name = new PersonName(givenNames.get(0).getValue(), sb.toString(), fhirPatient.getNameFirstRep().getFamily());
-
-		}
 		
+		resultsMap.put("success", CRIdentifier);
 		
-		
-		switch (fhirPatient.getBirthDateElement().getPrecision()) {
-			case DAY:
-				p.setBirthdateEstimated(false);
-				break;
-			case MONTH:
-			case YEAR:
-				p.setBirthdateEstimated(true);
-				break;
-		}
-
-		// Set patient gender
-		if (fhirPatient.hasGender()) {
-			switch (fhirPatient.getGender()) {
-				case MALE:
-					p.setGender("M");
-					break;
-				case FEMALE:
-					p.setGender("F");
-					break;
-				case OTHER:
-					p.setGender("O");
-					break;
-				case UNKNOWN:
-					p.setGender("U");
-					break;
-			}
-		}
-
-		name.setCreator(user);
-		name.setDateCreated(new Date());
-		name.setChangedBy(user);
-		name.setDateChanged(new Date());
-		p.addName(name);
-		p.setBirthdate(fhirPatient.getBirthDate());
-
-		// Get the identifiers of the patient
-		List<org.hl7.fhir.r4.model.Identifier> identifiers = fhirPatient.getIdentifier();
-		for (org.hl7.fhir.r4.model.Identifier fhirIdentifier : identifiers) {
-			if (Context.getPatientService().getPatientIdentifierTypeByUuid(
-				fhirIdentifier.getType().getCodingFirstRep().getCode()) != null){
-
-				PatientIdentifier pi = new PatientIdentifier();
-				pi.setIdentifier(fhirIdentifier.getValue());
-	
-				pi.setIdentifierType(Context.getPatientService().getPatientIdentifierTypeByUuid(
-					fhirIdentifier.getType().getCodingFirstRep().getCode()));
-				pi.setLocation(Context.getLocationService().getDefaultLocation());
-				
-				switch (fhirIdentifier.getUse()) {
-					case OFFICIAL:
-						pi.setPreferred(true);
-						break;
-					default:
-						pi.setPreferred(false);
-						break;
-				}
-	
-				BindException piErrors = new BindException(pi, "patientIdentifier");
-				new PatientIdentifierValidator().validate(pi, piErrors);
-				if (piErrors.hasErrors()) {
-					log.warn(piErrors.getMessage());
-					 resultsMap.put("error", "Error validating identifiers" );
-					 return resultsMap;
-				}
-				p.addIdentifier(pi);
-			}
-			
-
-		}
-		
-		Patient patient = Context.getPatientService().savePatient(p);
-		resultsMap.put("success", patient.getPatientId());
-
 		return resultsMap;
-		
 	}
 	
 	/**
