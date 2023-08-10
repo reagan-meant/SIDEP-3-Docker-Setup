@@ -30,14 +30,14 @@
       "fields": {
       "art": {
           "algorithm": "exact",
-          "fhirpath": "identifier.where(system='http://clientregistry.org/artnumber').value",
+          "fhirpath": "identifier.where(system='http://openelis-global.org/pat_nationalId').value",
           "espath": "art",
           "null_handling": "conservative",
           "null_handling_both": "conservative"
         },
         "upi": {
           "algorithm": "exact",
-          "fhirpath": "identifier.where(system='http://cote.divore/ext/identifier/UPI').value",
+          "fhirpath": "identifier.where(system='https://openmrs.org/UPI').value",
           "espath": "upi",
           "null_handling": "conservative",
           "null_handling_both": "conservative"
@@ -45,63 +45,20 @@
       },
       "potentialMatchThreshold": 3,
       "autoMatchThreshold": 3
-    },
-    {
+    },{
       "matchingType": "deterministic",
       "fields": {
         "upi": {
           "algorithm": "exact",
-          "fhirpath": "identifier.where(system='http://cote.divore/ext/identifier/UPI').value",
+          "fhirpath": "identifier.where(system='https://openmrs.org/UPI').value",
           "espath": "upi",
           "null_handling": "conservative",
           "null_handling_both": "conservative"
         },
         "phone": {
           "algorithm": "exact",
-          "fhirpath": "telecom.first().value",
+          "fhirpath": "telecom.value",
           "espath": "phone",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        }
-      },
-      "potentialMatchThreshold": 3,
-      "autoMatchThreshold": 3
-    },
-    {
-      "matchingType": "deterministic",
-      "fields": {
-        "upi": {
-          "algorithm": "exact",
-          "fhirpath": "identifier.where(system='http://cote.divore/ext/identifier/UPI').value",
-          "espath": "upi",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
-        "homephone": {
-          "algorithm": "exact",
-          "fhirpath": "telecom.where(use='home').value",
-          "espath": "homephone",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        }
-      },
-      "potentialMatchThreshold": 3,
-      "autoMatchThreshold": 3
-    },
-    {
-      "matchingType": "deterministic",
-      "fields": {
-        "upi": {
-          "algorithm": "exact",
-          "fhirpath": "identifier.where(system='http://cote.divore/ext/identifier/UPI').value",
-          "espath": "upi",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
-        "cellphone": {
-          "algorithm": "exact",
-          "fhirpath": "telecom.last().value",
-          "espath": "cellphone",
           "null_handling": "conservative",
           "null_handling_both": "conservative"
         }
@@ -114,7 +71,7 @@
     "fields": {
       "art": {
         "algorithm": "exact",
-        "fhirpath": "identifier.where(system='http://clientregistry.org/artnumber').value",
+        "fhirpath": "identifier.where(system='http://openelis-global.org/pat_nationalId').value",
         "espath": "art",
         "null_handling": "conservative",
         "null_handling_both": "conservative"
@@ -161,8 +118,8 @@
         "algorithm": "exact",
         "fhirpath": "telecom.value",
         "espath": "phone",
-        "null_handling": "conservative",
-        "null_handling_both": "conservative"
+        "null_handling": "moderate",
+        "null_handling_both": "moderate"
       }
     },
     "potentialMatchThreshold": 7,
@@ -257,15 +214,8 @@
   },
   "phone": {
     "algorithm": "exact",
-    "fhirpath": "telecom.first().value",
+    "fhirpath": "telecom.value",
     "espath": "phone",
-    "null_handling": "conservative",
-    "null_handling_both": "conservative"
-  },
-  "cellphone": {
-    "algorithm": "exact",
-    "fhirpath": "telecom.last().value",
-    "espath": "cellphone",
     "null_handling": "conservative",
     "null_handling_both": "conservative"
   }
@@ -316,7 +266,8 @@
     "null_handling_both": "conservative"
   },
   "phone": {
-    "algorithm": "exact",
+    "algorithm": "damerau-levenshtein",
+    "threshold": 2,
     "fhirpath": "telecom.value",
     "espath": "phone",
     "null_handling": "conservative",
@@ -325,5 +276,6 @@
 },
 "potentialMatchThreshold": 6,
 "autoMatchThreshold": 8
-}]
+}
+]
 }
