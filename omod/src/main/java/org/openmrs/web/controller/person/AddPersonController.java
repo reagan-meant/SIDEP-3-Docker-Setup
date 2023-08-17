@@ -109,10 +109,7 @@ public class AddPersonController extends SimpleFormController {
 		String viewType = person.get(VIEW_TYPE);
 		String personType = person.get(PERSON_TYPE);
 		String personp = person.get(PATIENT_PRESENT);
-		if (StringUtils.isNotEmpty(personp)) {
-			return new ModelAndView(new RedirectView(request.getContextPath()
-			        + "/admin/patients/shortPatientForm.form?fhirPatientId=" + personp));
-		} else if (StringUtils.isEmpty(personId)) {
+		if (StringUtils.isEmpty(personId)) {
 			// if they didn't pick a person, continue on to the edit screen no matter what type of view was requested)
 			if ("view".equals(viewType) || "shortEdit".equals(viewType)) {
 				viewType = "shortEdit";
@@ -121,6 +118,9 @@ public class AddPersonController extends SimpleFormController {
 			}
 			
 			return new ModelAndView(new RedirectView(getPersonURL("", personType, viewType, request)));
+		} else if (StringUtils.isNotEmpty(personp)) {
+			return new ModelAndView(new RedirectView(request.getContextPath()
+			        + "/admin/patients/shortPatientForm.form?fhirPatientId=" + personp));
 		} else {
 			// if they picked a person, go to the type of view that was requested
 			
