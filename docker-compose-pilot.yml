@@ -125,7 +125,9 @@ services:
       - ./configs/opencr/PatientRelationship.json:/src/resources/Relationships/PatientRelationship.json
     ports:
       - 3000:3000
-
+    depends_on:
+      - opencr-fhir
+      
   opencr-fhir:
     image: hapiproject/hapi:v5.1.0
     container_name: opencr-fhir
@@ -149,7 +151,7 @@ services:
   es:
     container_name: es
     hostname: es
-    image: intrahealth/elasticsearch:latest
+    image: intrahealth/elasticsearch:adf8905
     restart: unless-stopped
     environment:
       - xpack.security.enabled=false
