@@ -2,7 +2,7 @@
     <globalProperties>
       <globalProperty>
         <property>clientregistry.serverUrl</property>
-            <value>http://tap-demo.openelisci.org/openhim-http/CR/fhir</value>
+            <value>http://openhim-core:5001/CR/fhir</value>
       </globalProperty>
       <globalProperty>
         <property>fhir2.personContactPointAttributeTypeUuid</property>
