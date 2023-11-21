@@ -1,7 +1,3 @@
-.DS_Store
-configs/traefik/certs/*.crt
-configs/traefik/certs/*.key
-configs/traefik/certs/*.pem
-.idea
-.db/*
-.data/*
+version https://git-lfs.github.com/spec/v1
+oid sha256:51605785d09849087eb3fad5c0063ff7f8a52392b5b0eb0591454e3b99f93e97
+size 187
