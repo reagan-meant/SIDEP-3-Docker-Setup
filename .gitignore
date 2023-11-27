@@ -1,3 +1,37 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:51605785d09849087eb3fad5c0063ff7f8a52392b5b0eb0591454e3b99f93e97
-size 187
+*.class
+*.iml
+*.idea
+.settings
+.project
+*.sass-cache
+target
+.java-version
+*.releaseBackup
+release.properties
+README.html
+
+# Package Files #
+*.jar
+*.war
+*.ear
+*.iml
+
+.settings/*
+**/bin
+**/.classpath
+**/.project
+**/.settings/*
+**/target/*
+
+# OS X auto-generated files #
+.DS_Store
+
+ *.css
+omod/src/main/compass/sass-external/*
+
+# Rubygems build directories #
+omod/.rubygems
+omod/.rubygems-provided
+
+# Bower resources #
+bower_components
