@@ -51,10 +51,14 @@ docker compose -f docker-compose-local.yml up -d
 | OpenELIS | https://localhost:8443/OpenELIS-Global/ |    admin : adminADMIN!| 
 
 ### Restart the Streaming pipeline to work Properly
-After spinning up the Sigdep3 , restart the Streaming pipeline to Stream all Changes to the SHR
+After spinning up the Sigdep3 , restart the Streaming pipeline to Stream all Changes to the SHR (Fixed by adding depends-on meta in compose file)
 ```
 docker restart streaming-pipeline
 ```
+
+### Configure OpenHIM URL for client registry module of OpenMRS
+Set the CLIENTREGISTRY_SERVERURL, CLIENTREGISTRY_USERNAME, CLIENTREGISTRY_PASSWORD, CLIENTREGISTRY_IDENTIFIERROOT in the .env file
+Note that the Openhim should be up before starting the OpenMRS service. Currently this is ensured on local setup with the depends-on meta in the compose file
 
 
 ### Possible challenges
