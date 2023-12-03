@@ -11,6 +11,13 @@ services:
         condition: service_healthy
     container_name: sigdep3
     hostname: sigdep3
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - "-f"
+        - "http://localhost:8080/openmrs/"
+      timeout: 5s
     environment:
       OMRS_CONFIG_CONNECTION_SERVER: "sigdep-db"
       OMRS_CONFIG_CONNECTION_ROOT_PASSWORD: "root"
@@ -21,6 +28,11 @@ services:
       OMRS_CONFIG_CREATE_TABLES: "false"
       OMRS_CONFIG_HAS_CURRENT_OPENMRS_DATABASE: "true"
       OMRS_DEV_DEBUG_PORT: "1044"
+      clientregistry.serverUrl: ${CLIENTREGISTRY_SERVERURL}
+      clientregistry.username: ${CLIENTREGISTRY_USERNAME}
+      clientregistry.password: ${CLIENTREGISTRY_PASSWORD}
+      clientregistry.identifierRoot: ${CLIENTREGISTRY_IDENTIFIERROOT}
+      #clientregistry.serverUrl: "https://test25.cihis.org/openhimcore/CR/fhir"
     volumes:
       - ./configs/sigdep3/distribution:/openmrs/distribution
       # uncomment to persist the volumes on the Host file system
@@ -46,6 +58,9 @@ services:
       test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
       timeout: 20s
       retries: 10
+    depends_on:
+      openhim-console:
+        condition: service_healthy
     volumes:
       - ./configs/sigdep3/mysql.cnf:/etc/mysql/conf.d/custom.cnf  # mysql config preconfigured to allow binlog/debezium
       - ./configs/sigdep3/init-db:/docker-entrypoint-initdb.d
@@ -105,15 +120,15 @@ services:
     image: ghcr.io/i-tech-uw/openhim-config:v0.0.0
     volumes:
       - ./configs/openhim/test-openhim-config.json:/app/test-openhim-config.json
- 
 
+ 
 ###
   # OpenCR - Client Registry
   ###
   opencr:
     container_name: opencr
     hostname: opencr
-    image: intrahealth/opencr:c06849d
+    image: intrahealth/opencr:15a3465
     restart: unless-stopped
     environment:
       - NODE_ENV=docker
@@ -164,6 +179,70 @@ services:
       - /usr/share/elasticsearch/data
     healthcheck:
       test: "curl --silent --fail http://es:9200/_cluster/health || exit 1"
+
+    # Hapi-FHIR -  SHR
+  shr-hapi-fhir:
+    container_name: shr-hapi-fhir
+    image: hapiproject/hapi:v5.5.1
+    ports:
+      - "8082:8080"
+    restart: always
+    environment:
+      - spring.datasource.url=jdbc:postgresql://db/hapi?targetServerType=primary
+      - spring.datasource.username=admin
+      - spring.datasource.password=admin
+      - spring.datasource.driverClassName=org.postgresql.Driver
+      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQL95Dialect
+      - spring.datasource.hikari.minimumIdle=20
+      - spring.datasource.hikari.connectionTimeout=60000
+      - spring.datasource.hikari.idleTimeout=600000
+      - hapi.fhir.allow_external_references=true
+      - hapi.fhir.bulk_export_enabled=true
+      - hapi.fhir.enable_repository_validating_interceptor=true
+    depends_on:
+      - db
+
+  # Streaming Pipeline
+  streaming-pipeline: 
+    image: openmrsinfra/openmrs-fhir-analytics:plir-binlog
+    container_name: streaming-pipeline
+    healthcheck:
+      test: "exit 0"
+    depends_on:
+      sigdep3:
+        condition: service_healthy
+    volumes:
+      - ./configs/streaming-pipeline/config.json:/deployments/config.json
+      # data is the directory which you want to persist the generated parquet files
+      # - ./configs/streaming-pipeline/parquet:/tmp
+    environment:
+      - OPENMRS_URL=http://sigdep3:8080/openmrs
+      - OPENMRS_USERNAME=admin
+      - OPENMRS_PASSWORD=Admin123
+      - SINK_URL=http://openhim-core:5001/fhir/
+      - SINK_USERNAME=dbezium
+      - SINK_PASSWORD=dbezium
+      - JDBC_FETCH_SIZE=10000
+      - JDBC_MAX_POOL_SIZE=50
+      - JDBC_INITIAL_POOL_SIZE=10
+      - JDBC_DRIVER_CLASS=com.mysql.cj.jdbc.Driver
+      - JDBC_URL=jdbc:mysql://sigdep-db:3306/openmrs
+      # the 2 variable below should be same as volume mappings above
+      #- PARQUET_PATH=
+      - FHIR_DEBEZIUM_CONFIG_PATH=/deployments/config.json  
+  
+  #DB for HAPI FHIR for SHR
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_USER: admin
+      POSTGRES_DB: hapi
+    volumes:
+      - /var/lib/postgresql/data
+    ports:
+      - "5432:5432"
 
 volumes:
   db-data:

@@ -186,7 +186,9 @@
         "PATCH"
       ],
       "type": "http",
-      "allow": [],
+      "allow": [
+        "test"
+      ],
       "whitelist": [],
       "authType": "public",
       "matchContentTypes": [],
@@ -206,7 +208,7 @@
           "forwardAuthHeader": false,
           "name": "Central FHIR server",
           "secured": false,
-          "host": "fhir.openelis.org.remote",
+          "host": "shr-hapi-fhir",
           "port": 8080,
           "path": "",
           "pathTransform": "",
@@ -269,7 +271,7 @@
           "forwardAuthHeader": false,
           "name": "Central FHIR server",
           "secured": false,
-          "host": "fhir.openelis.org.remote",
+          "host": "shr-hapi-fhir",
           "port": 8080,
           "path": "",
           "pathTransform": "",

@@ -435,8 +435,8 @@ services:
       - hapi.fhir.allow_external_references=true
   
 
-  fhir.openelis.org.remote:
-    container_name: openelis-remote-source
+  shr-hapi-fhir:
+    container_name: shr-hapi-fhir
     image: hapiproject/hapi:v5.5.1
     # ports:
     #   - "8081:8080"
