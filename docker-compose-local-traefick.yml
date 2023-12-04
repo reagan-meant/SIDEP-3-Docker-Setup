@@ -167,7 +167,7 @@ services:
     container_name: openhim-config
     image: ghcr.io/i-tech-uw/openhim-config:v0.0.0
     volumes:
-      - ./configs/openhim/_config.json:/app/test-openhim-config.json
+      - ./configs/openhim/test-openhim-config.json:/app/test-openhim-config.json
     networks:
       - hie
 
