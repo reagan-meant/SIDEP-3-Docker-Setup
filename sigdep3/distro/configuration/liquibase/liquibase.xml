@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog/1.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog/1.9
+                  http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-1.9.xsd">
+	<include file="concepts.xml" relativeToChangelogFile="true"/>
+
+	<changeSet id="ensure_admin_provider_account-202302221251" author="samuel">
+		<comment>
+			Setup Provider account for admin
+		</comment>
+        <!-- <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="0">
+                SELECT COUNT(*) FROM provider WHERE person_id = 1;
+            </sqlCheck>
+        </preConditions> -->
+		<insert tableName="provider">
+            <column name="provider_id" valueNumeric="1"/>
+            <column name="name"/>
+            <column name="person_id" valueNumeric="1"/>
+            <column name="identifier" value="admin"/>
+            <column name="creator" valueNumeric="1"/>
+            <column name="date_created" valueDate="2023-11-27T00:00:00"/>
+            <column name="changed_by"/>
+            <column name="date_changed"/>
+            <column name="retired" valueBoolean="false"/>
+            <column name="retired_by"/>
+            <column name="date_retired"/>
+            <column name="retire_reason"/>
+            <column name="uuid" value="621c49ec-1ddd-4945-968a-59a11163ccb8"/>
+            <column name="role_id"/>
+            <column name="speciality_id"/>
+        </insert>
+	</changeSet>
+</databaseChangeLog>
