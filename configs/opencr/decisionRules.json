@@ -29,6 +29,7 @@
   "rules": [
     {
       "matchingType": "deterministic",
+      "rule": "1a",
       "fields": {
         "art": {
           "algorithm": "exact",
@@ -43,35 +44,65 @@
           "espath": "upi",
           "null_handling": "conservative",
           "null_handling_both": "conservative"
-        },
-        "phone": {
-          "algorithm": "exact",
-          "fhirpath": "telecom.value",
-          "espath": "phone",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
         }
       },
-      "potentialMatchThreshold": 2,
+      "potentialMatchThreshold": 3,
       "autoMatchThreshold": 3
     },
     {
       "matchingType": "deterministic",
+      "rule": "2",
       "fields": {
-        "art": {
+        "upi": {
+          "algorithm": "exact",
+          "fhirpath": "identifier.where(system='https://openmrs.org/UPI').value",
+          "espath": "upi",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "family": {
+          "algorithm": "exact",
+          "fhirpath": "name.where(use='official').family",
+          "espath": "family",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "given": {
+          "algorithm": "exact",
+          "fhirpath": "name.where(use='official').first().given",
+          "espath": "given",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "gender": {
+          "algorithm": "exact",
+          "fhirpath": "gender",
+          "espath": "gender",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "birthdate": {
+          "algorithm": "exact",
+          "fhirpath": "birthDate",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative",
+          "espath": "birthDate"
+        }
+      },
+      "potentialMatchThreshold": 6,
+      "autoMatchThreshold": 6
+    },
+    {
+      "matchingType": "deterministic",
+      "rule": "3",
+      "fields": {
+        "upi": {
           "algorithm": "exact",
           "fhirpath": "identifier.where(system='http://openelis-global.org/pat_nationalId').value",
           "espath": "art",
           "null_handling": "conservative",
           "null_handling_both": "conservative"
         },
-        "given": {
-          "algorithm": "exact",
-          "fhirpath": "name.where(use='official').first().given",
-          "espath": "given",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
         "family": {
           "algorithm": "exact",
           "fhirpath": "name.where(use='official').family",
@@ -79,19 +110,12 @@
           "null_handling": "conservative",
           "null_handling_both": "conservative"
         },
-        "middle": {
+        "given": {
           "algorithm": "exact",
-          "fhirpath": "name.where(use='official').last().given",
-          "espath": "middle",
+          "fhirpath": "name.where(use='official').first().given",
+          "espath": "given",
           "null_handling": "conservative",
-          "null_handling_both": "greedy"
-        },
-        "birthdate": {
-          "algorithm": "exact",
-          "fhirpath": "birthDate",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative",
-          "espath": "birthDate"
+          "null_handling_both": "conservative"
         },
         "gender": {
           "algorithm": "exact",
@@ -100,163 +124,16 @@
           "null_handling": "conservative",
           "null_handling_both": "conservative"
         },
-        "phone": {
-          "algorithm": "exact",
-          "fhirpath": "telecom.value",
-          "espath": "phone",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        }
-      },
-      "potentialMatchThreshold": 7,
-      "autoMatchThreshold": 7
-    },
-    {
-      "matchingType": "deterministic",
-      "fields": {
-        "given": {
-          "algorithm": "exact",
-          "fhirpath": "name.where(use='official').first().given",
-          "espath": "given",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
-        "family": {
-          "algorithm": "exact",
-          "fhirpath": "name.where(use='official').family",
-          "espath": "family",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
-        "middle": {
-          "algorithm": "exact",
-          "fhirpath": "name.where(use='official').last().given",
-          "espath": "middle",
-          "null_handling": "conservative",
-          "null_handling_both": "greedy"
-        },
         "birthdate": {
           "algorithm": "exact",
           "fhirpath": "birthDate",
           "null_handling": "conservative",
           "null_handling_both": "conservative",
           "espath": "birthDate"
-        },
-        "gender": {
-          "algorithm": "exact",
-          "fhirpath": "gender",
-          "espath": "gender",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
         }
       },
       "potentialMatchThreshold": 6,
-      "autoMatchThreshold": 10
-    },
-    {
-      "matchingType": "deterministic",
-      "fields": {
-        "given": {
-          "algorithm": "exact",
-          "fhirpath": "name.where(use='official').first().given",
-          "espath": "given",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
-        "family": {
-          "algorithm": "exact",
-          "fhirpath": "name.where(use='official').family",
-          "espath": "family",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
-        "middle": {
-          "algorithm": "exact",
-          "fhirpath": "name.where(use='official').last().given",
-          "espath": "middle",
-          "null_handling": "conservative",
-          "null_handling_both": "greedy"
-        },
-        "birthdate": {
-          "algorithm": "DateDamerau",
-          "threshold": 2,
-          "fhirpath": "birthDate",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative",
-          "espath": "birthDate"
-        },
-        "gender": {
-          "algorithm": "exact",
-          "fhirpath": "gender",
-          "espath": "gender",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
-        "phone": {
-          "algorithm": "damerau-levenshtein",
-          "threshold": 2,
-          "fhirpath": "telecom.value",
-          "espath": "phone",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        }
-      },
-      "potentialMatchThreshold": 5,
-      "autoMatchThreshold": 10
-    },
-    {
-      "matchingType": "deterministic",
-      "fields": {
-        "given": {
-          "algorithm": "jaro-winkler-similarity",
-          "threshold": 0.9,
-          "fhirpath": "name.where(use='official').first().given",
-          "espath": "given",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
-        "family": {
-          "algorithm": "jaro-winkler-similarity",
-          "threshold": 0.9,
-          "fhirpath": "name.where(use='official').family",
-          "espath": "family",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
-        "middle": {
-          "algorithm": "jaro-winkler-similarity",
-          "threshold": 0.9,
-          "fhirpath": "name.where(use='official').last().given",
-          "espath": "middle",
-          "null_handling": "conservative",
-          "null_handling_both": "greedy"
-        },
-        "birthdate": {
-          "algorithm": "DateDamerau",
-          "threshold": 2,
-          "fhirpath": "birthDate",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative",
-          "espath": "birthDate"
-        },
-        "gender": {
-          "algorithm": "exact",
-          "fhirpath": "gender",
-          "espath": "gender",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        },
-        "phone": {
-          "algorithm": "damerau-levenshtein",
-          "threshold": 2,
-          "fhirpath": "telecom.value",
-          "espath": "phone",
-          "null_handling": "conservative",
-          "null_handling_both": "conservative"
-        }
-      },
-      "potentialMatchThreshold": 5,
-      "autoMatchThreshold": 10
+      "autoMatchThreshold": 6
     }
   ]
 }
