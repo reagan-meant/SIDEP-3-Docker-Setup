@@ -96,7 +96,7 @@
       "matchingType": "deterministic",
       "rule": "3",
       "fields": {
-        "upi": {
+        "art": {
           "algorithm": "exact",
           "fhirpath": "identifier.where(system='http://openelis-global.org/pat_nationalId').value",
           "espath": "art",
@@ -133,6 +133,42 @@
         }
       },
       "potentialMatchThreshold": 6,
+      "autoMatchThreshold": 6
+    },
+    {
+      "matchingType": "deterministic",
+      "rule": "4",
+      "fields": {
+        "upi": {
+          "algorithm": "exact",
+          "fhirpath": "identifier.where(system='https://openmrs.org/UPI').value",
+          "espath": "upi",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "family": {
+          "algorithm": "exact",
+          "fhirpath": "name.where(use='official').family",
+          "espath": "family",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "given": {
+          "algorithm": "exact",
+          "fhirpath": "name.where(use='official').first().given",
+          "espath": "given",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "gender": {
+          "algorithm": "exact",
+          "fhirpath": "gender",
+          "espath": "gender",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        }
+      },
+      "potentialMatchThreshold": 5,
       "autoMatchThreshold": 6
     }
   ]
