@@ -424,7 +424,7 @@
           "null_handling_both": "conservative"
         }
       },
-      "potentialMatchThreshold": 4,
+      "potentialMatchThreshold": 5,
       "autoMatchThreshold": 6
     }
   ]
