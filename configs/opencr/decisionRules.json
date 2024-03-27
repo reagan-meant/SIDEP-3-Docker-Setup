@@ -389,6 +389,43 @@
       },
       "potentialMatchThreshold": 5,
       "autoMatchThreshold": 6
+    },
+    {
+      "matchingType": "deterministic",
+      "rule": "11",
+      "fields": {
+        "given": {
+          "algorithm": "exact",
+          "fhirpath": "name.where(use='official').first().given",
+          "espath": "given",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "family": {
+          "algorithm": "exact",
+          "fhirpath": "name.where(use='official').family",
+          "espath": "family",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "gender": {
+          "algorithm": "exact",
+          "fhirpath": "gender",
+          "espath": "gender",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "birthdate": {
+          "algorithm": "DateDamerau",
+          "threshold": 0.8,
+          "fhirpath": "birthDate",
+          "espath": "birthDate",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        }
+      },
+      "potentialMatchThreshold": 4,
+      "autoMatchThreshold": 6
     }
   ]
 }
