@@ -278,6 +278,45 @@
       },
       "potentialMatchThreshold": 5,
       "autoMatchThreshold": 6
+    },
+    {
+      "matchingType": "deterministic",
+      "rule": "8",
+      "fields": {
+        "family": {
+          "algorithm": "jaro-winkler-similarity",
+          "threshold": 0.8,
+          "fhirpath": "name.where(use='official').family",
+          "espath": "family",
+          "nullHandling": "conservative",
+          "nullHandlingBothFields": "conservative"
+        },
+        "given": {
+          "algorithm": "jaro-winkler-similarity",
+          "threshold": 0.8,
+          "fhirpath": "name.where(use='official').first().given",
+          "espath": "given",
+          "nullHandling": "conservative",
+          "nullHandlingBothFields": "conservative"
+        },
+        "gender": {
+          "algorithm": "exact",
+          "fhirpath": "gender",
+          "espath": "gender",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        },
+        "birthdate": {
+          "algorithm": "DateDamerau",
+          "threshold": 0.8,
+          "fhirpath": "birthDate",
+          "espath": "birthDate",
+          "null_handling": "conservative",
+          "null_handling_both": "conservative"
+        }
+      },
+      "potentialMatchThreshold": 5,
+      "autoMatchThreshold": 6
     }
   ]
 }
