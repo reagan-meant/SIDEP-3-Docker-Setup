@@ -37,6 +37,8 @@ docker system prune --volumes
 ```
 ## Local setup
 
+Unzip esplugin plugin
+
 Spin up the services
 
 ```

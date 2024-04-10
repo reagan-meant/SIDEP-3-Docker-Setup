@@ -1,7 +1,7 @@
 <config>
   <globalProperties>
     <globalProperty>
-      <property>clientregistry.serverUrl</property>
+      <property>CLIENTREGISTRY_SERVERURL</property>
           <value>https://test2.cihis.org/openhimcore/CR/fhir</value>
     </globalProperty>
     <globalProperty>
@@ -34,7 +34,7 @@
     </globalProperty>
     <globalProperty>
       <property>opencrMatchesUrl</property>
-            <value>https://test2.cihis.org/ocrux/match/matches/</value>
+            <value>https://test2.cihis.org/openhimcore/CR/fhir/matches/</value>
     </globalProperty>
   </globalProperties>
 </config>

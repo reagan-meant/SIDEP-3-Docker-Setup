@@ -219,7 +219,7 @@ services:
 
 
   opencr-fhir:
-    image: hapiproject/hapi:v5.1.0
+    image: hapiproject/hapi:v5.5.1
     container_name: opencr-fhir
     hostname: opencr-fhir
     restart: unless-stopped
@@ -253,7 +253,7 @@ services:
         hard: 65536
     volumes:
       - /usr/share/elasticsearch/data
-      - /home/ubuntu/code/SIDEP-3-Docker-Setup/string-similarity:/usr/share/elasticsearch/plugins/string-similarity-scoring
+      - ./esplugin/string-similarity:/usr/share/elasticsearch/plugins/string-similarity-scoring
     healthcheck:
       test: "curl --silent --fail http://es:9200/_cluster/health || exit 1"
     networks:
@@ -331,6 +331,7 @@ services:
       POSTGRES_DB: hapi
     volumes:
       - /var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d  # Other dbs like opencr created via script
     ports:
       - "5432:5432"
     networks:

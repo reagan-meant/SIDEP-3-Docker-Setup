@@ -1733,6 +1733,70 @@
         "GET",
         "POST",
         "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "type": "http",
+      "allow": [
+        "opencr"
+      ],
+      "whitelist": [],
+      "authType": "private",
+      "matchContentTypes": [],
+      "properties": [],
+      "txViewAcl": [],
+      "txViewFullAcl": [],
+      "txRerunAcl": [],
+      "status": "enabled",
+      "rewriteUrls": false,
+      "addAutoRewriteRules": true,
+      "autoRetryEnabled": false,
+      "autoRetryPeriodMinutes": 60,
+      "routes": [
+        {
+          "type": "http",
+          "status": "enabled",
+          "forwardAuthHeader": false,
+          "name": "Match Resources",
+          "secured": false,
+          "host": "opencr",
+          "port": 3000,
+          "path": "/match/matches",
+          "pathTransform": "",
+          "primary": true,
+          "username": "",
+          "password": ""
+        }
+      ],
+      "requestBody": true,
+      "responseBody": true,
+      "rewriteUrlsConfig": [],
+      "name": "Get Matching Resource From openCR",
+      "description": "Get Matching Resource From openCR",
+      "matchContentRegex": null,
+      "matchContentXpath": null,
+      "matchContentValue": null,
+      "matchContentJson": null,
+      "urlPattern": "^/CR/fhir/matches.*$",
+      "pollingSchedule": null,
+      "tcpHost": null,
+      "tcpPort": null,
+      "updatedBy": {
+        "id": "65d6772866ca530014d1cac2",
+        "name": "Super User"
+      },
+      "alerts": [],
+      "priority": 1
+    },
+    {
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
         "PUT"
       ],
       "type": "http",
