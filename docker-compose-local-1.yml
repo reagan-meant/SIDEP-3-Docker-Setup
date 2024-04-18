@@ -144,7 +144,7 @@ services:
     container_name: openhim-console
     image: jembi/openhim-console:v1.15.0
     volumes:
-      - ./configs/openhim-console/default.json:/usr/share/nginx/html/config/default.json
+      - ./configs/openhim-console/default-local.json:/usr/share/nginx/html/config/default.json
     healthcheck:
       test: "curl -sS http://openhim-console || exit 1"
       interval: 10s

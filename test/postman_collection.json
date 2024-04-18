@@ -1,0 +1,77 @@
+{
+	"info": {
+		"_postman_id": "3deb7d4f-8079-447a-a56d-2779fa6825be",
+		"name": "Load Data into OpenCR",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "32722732",
+		"_collection_link": "https://www.postman.com/itechuw/workspace/ci-tap-demo/collection/1525496-3deb7d4f-8079-447a-a56d-2779fa6825be?action=share&source=collection_link&creator=32722732"
+	},
+	"item": [
+		{
+			"name": "Send Patient to OpenCR",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Successful POST request\", function () {",
+							"    console.log(pm.response);",
+							"    pm.expect(pm.response.code).to.be.oneOf([201, 200]);",
+							"",
+							"});",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"auth": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "password",
+							"value": "{{password}}",
+							"type": "string"
+						},
+						{
+							"key": "username",
+							"value": "{{site_name}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"resourceType\": \"Patient\",\n    \"meta\": {\n        \"profile\": [\n            \"http://b-techbw.github.io/bw-lab-ig/StructureDefinition/bw-patient\"\n        ]\n    },\n    \"identifier\": [\n         {\n            \"system\": \"https://openmrs.org/UPI\",\n            \"value\": \"{{up_id}}\",\n            \"use\": \"official\"\n        },{\n            \"system\": \"http://openelis-global.org/pat_nationalId\",\n            \"value\": \"{{art_id}}\",\n            \"use\": \"official\"\n        },\n        {\n            \"extension\": [\n                {\n                    \"url\": \"http://fhir.openmrs.org/ext/patient/identifier#location\",\n                    \"valueReference\": {\n                        \"reference\": \"Location/0a2c0967-2a56-41c9-9ad5-0bd959861b42\",\n                        \"type\": \"Location\",\n                        \"display\": \"openmrs-location\"\n                    }\n                }\n            ],\n            \"use\": \"usual\",\n            \"type\": {\n                \"text\": \"OpenMRS UUID\"\n            },\n            \"system\": \"http://clientregistry.org/openmrs\",\n            \"value\": \"{{$randomUUID}}\"\n        }\n    ],\n    \"name\": [\n        {\n            \"use\": \"official\",\n            \"family\": \"{{last_name}}\",\n            \"given\": [\n                \"{{first_name}}\",\n                \"{{second_name}}\"\n            ]\n        }\n    ],\n    \"gender\": \"{{gender}}\",\n    \"birthDate\": \"{{date_of_birth}}\",\n    \"deceasedBoolean\": false,\n    \"telecom\": [\n        {\n            \"system\" : \"phone\",\n            \"use\" : \"mobile\",\n            \"value\": \"{{cell_number}}\"\n        },\n        {\n            \"system\" : \"phone\",\n            \"use\" : \"home\",\n            \"value\": \"{{tel_number}}\"\n        }\n    ],\n    \"extension\": [\n\n]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{openhim-ssl-url}}/CR/fhir/Patient",
+					"host": [
+						"{{openhim-ssl-url}}"
+					],
+					"path": [
+						"CR",
+						"fhir",
+						"Patient"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "patientCRUID",
+			"value": ""
+		}
+	]
+}

@@ -93,3 +93,10 @@ Enter password of the private key when prompted
 cd deployment
 ansible-playbook -i inventory.ini deployment.yml
 ```
+
+Run the following command in the test folder using newman to preload the client registry
+
+```
+npm install -g newman
+newman run postman_collection.json -e postman_environment.json --iteration-data pims_rule_test_dataset.csv --insecure
+```
