@@ -95,7 +95,7 @@ services:
       timeout: 20s
       retries: 10
     depends_on:
-      openhim-console:
+      openhim-core:
         condition: service_healthy      
     volumes:
       - ./configs/sigdep3/mysql.cnf:/etc/mysql/conf.d/custom.cnf  # mysql config preconfigured to allow binlog/debezium
