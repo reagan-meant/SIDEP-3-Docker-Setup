@@ -336,6 +336,20 @@ services:
       - "5432:5432"
     networks:
           - hie
+
+  pipeline-controller:
+    image: itechuw/fhir-data-pipes:develop
+    container_name: pipeline-controller
+    volumes:
+      - ./configs/new-streaming-pipeline:/app/config:ro
+      - ./configs/dwh:/dwh
+    environment:
+      - "JAVA_OPTS=$JAVA_OPTS"
+    ports:
+      - '8090:8080'
+    networks:
+      - hie
+
 secrets:
   datasource.password:
     file: ./configs/openelis/properties/datasource.password
