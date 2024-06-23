@@ -96,7 +96,9 @@ services:
       retries: 10
     depends_on:
       openhim-core:
-        condition: service_healthy      
+        condition: service_healthy
+      opencr-fhir:
+        condition: service_started
     volumes:
       - ./configs/sigdep3/mysql.cnf:/etc/mysql/conf.d/custom.cnf  # mysql config preconfigured to allow binlog/debezium
       - ./configs/sigdep3/init-db:/docker-entrypoint-initdb.d
@@ -106,7 +108,7 @@ services:
     networks:
       - hie
 
-#OpenHIM -IOL
+  #OpenHIM -IOL
   mongo:
     container_name: openhim-mongo
     ports:
@@ -187,7 +189,6 @@ services:
     networks:
       - hie
 
-###
   # OpenCR - Client Registry
   ###
   opencr:
@@ -205,6 +206,7 @@ services:
       - ./configs/opencr/PatientRelationship.json:/src/resources/Relationships/PatientRelationship.json
     depends_on:
       - opencr-fhir
+      - openhim-core
     labels:
       - 'traefik.enable=true'
       - 'traefik.docker.network=sigdep3_hie'
@@ -216,7 +218,6 @@ services:
       - 'traefik.http.routers.opencr.service=opencr'
     networks:
       - hie
-
 
   opencr-fhir:
     image: hapiproject/hapi:v5.5.1
@@ -239,6 +240,7 @@ services:
     #   SPRING_CONFIG_LOCATION: 'file:///data/hapi/application.yaml'
     networks:
       - hie
+  
   es:
     container_name: es
     hostname: es
@@ -259,7 +261,7 @@ services:
     networks:
       - hie
 
-    # Hapi-FHIR -  SHR
+  # Hapi-FHIR -  SHR
   shr-hapi-fhir:
     container_name: shr-hapi-fhir
     image: hapiproject/hapi:v5.5.1
@@ -291,36 +293,6 @@ services:
     networks:
       - hie
 
-  # Streaming Pipeline
-  streaming-pipeline: 
-    image: openmrsinfra/openmrs-fhir-analytics:plir-binlog
-    container_name: streaming-pipeline
-    healthcheck:
-      test: "exit 0"
-    depends_on:
-        sigdep3:
-          condition: service_healthy
-    volumes:
-      - ./configs/streaming-pipeline/config.json:/deployments/config.json
-      # data is the directory which you want to persist the generated parquet files
-      # - ./configs/streaming-pipeline/parquet:/tmp
-    environment:
-      - OPENMRS_URL=http://sigdep3:8080/openmrs
-      - OPENMRS_USERNAME=admin
-      - OPENMRS_PASSWORD=Admin123
-      - SINK_URL=http://openhim-core:5001/fhir/
-      - SINK_USERNAME=dbezium
-      - SINK_PASSWORD=dbezium
-      - JDBC_FETCH_SIZE=10000
-      - JDBC_MAX_POOL_SIZE=50
-      - JDBC_INITIAL_POOL_SIZE=10
-      - JDBC_DRIVER_CLASS=com.mysql.cj.jdbc.Driver
-      - JDBC_URL=jdbc:mysql://sigdep-db:3306/openmrs
-      # the 2 variable below should be same as volume mappings above
-      #- PARQUET_PATH=
-      - FHIR_DEBEZIUM_CONFIG_PATH=/deployments/config.json  
-    networks:
-        - hie
   #DB for HAPI FHIR for SHR
   db:
     image: postgres:9.5
