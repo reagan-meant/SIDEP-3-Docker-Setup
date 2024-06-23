@@ -30,84 +30,6 @@ services:
       - 443:443
       - 8282:8080
 
-  sigdep3:
-    image: partnersinhealth/openmrs-server:latest
-    restart: unless-stopped
-    depends_on:
-      sigdep-db:
-        condition: service_healthy
-    container_name: sigdep3
-    hostname: sigdep3
-    healthcheck:
-      test:
-        - CMD
-        - curl
-        - "-f"
-        - "http://localhost:8080/openmrs/"
-      timeout: 5s    
-    environment:
-      OMRS_CONFIG_CONNECTION_SERVER: "sigdep-db"
-      OMRS_CONFIG_CONNECTION_ROOT_PASSWORD: "root"
-      OMRS_CONFIG_CONNECTION_USERNAME: "root"
-      OMRS_CONFIG_CONNECTION_PASSWORD: "root"
-      OMRS_CONFIG_CONNECTION_EXTRA_ARGS: "&autoReconnect=true&sessionVariables=default_storage_engine%3DInnoDB&useUnicode=true&characterEncoding=UTF-8&useSSL=false&requireSSL=false"
-      OMRS_CONFIG_AUTO_UPDATE_DATABASE: "false"
-      OMRS_CONFIG_CREATE_TABLES: "false"
-      OMRS_CONFIG_HAS_CURRENT_OPENMRS_DATABASE: "true"
-      OMRS_DEV_DEBUG_PORT: "1044"
-      CLIENTREGISTRY_SERVERURL: ${CLIENTREGISTRY_SERVERURL}
-      CLIENTREGISTRY_USERNAME: ${CLIENTREGISTRY_USERNAME}
-      CLIENTREGISTRY_PASSWORD: ${CLIENTREGISTRY_PASSWORD}
-      CLIENTREGISTRY_IDENTIFIERROOT: ${CLIENTREGISTRY_IDENTIFIERROOT}
-
-    volumes:
-      - ./configs/sigdep3/distribution:/openmrs/distribution
-      # uncomment to persist the volumes on the Host file system
-      #- .data/sigdep3:/openmrs/data
-    networks:
-      - hie
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.docker.network=sigdep3_hie'
-      - 'traefik.http.services.sigdep3.loadbalancer.server.port=8080'
-      - 'traefik.http.services.sigdep3.loadbalancer.server.scheme=http'
-      - 'traefik.http.routers.sigdep3.service=sigdep3'
-      - 'traefik.http.routers.sigdep3.tls=true'
-      - 'traefik.http.routers.sigdep3.entrypoints=web-secure'
-      - 'traefik.http.routers.sigdep3.rule=Host(`test2.cihis.org`) && PathPrefix(`/openmrs`)'
-
-  sigdep-db:
-    image: library/mysql:5.6
-    restart: unless-stopped    
-    hostname: sigdep-db
-    container_name: sigdep-db
-    command: "mysqld \
-              --character-set-server=utf8 \
-              --collation-server=utf8_general_ci \
-              --max_allowed_packet=1G \
-              --default-authentication-plugin=mysql_native_password \
-              --sql_mode=STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
-    environment:
-      MYSQL_DATABASE: "openmrs"
-      MYSQL_ROOT_PASSWORD: "root"
-    healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      timeout: 20s
-      retries: 10
-    depends_on:
-      openhim-core:
-        condition: service_healthy
-      opencr-fhir:
-        condition: service_started
-    volumes:
-      - ./configs/sigdep3/mysql.cnf:/etc/mysql/conf.d/custom.cnf  # mysql config preconfigured to allow binlog/debezium
-      - ./configs/sigdep3/init-db:/docker-entrypoint-initdb.d
-    
-      # uncomment to persist the volumes on the Host file system
-      #- .db/sigdep3:/var/lib/mysql
-    networks:
-      - hie
-
   #OpenHIM -IOL
   mongo:
     container_name: openhim-mongo
@@ -313,7 +235,7 @@ services:
     image: itechuw/fhir-data-pipes:develop
     container_name: pipeline-controller
     volumes:
-      - ./configs/local-streaming-pipeline:/app/config:ro
+      - ./configs/remote-streaming-pipeline:/app/config:ro
       - ./configs/dwh:/dwh
     environment:
       - "JAVA_OPTS=$JAVA_OPTS"
@@ -321,6 +243,55 @@ services:
       - '8090:8080'
     networks:
       - hie
+
+  spark:
+    image: docker.io/bitnami/spark:3.3
+    container_name: spark-thriftserver
+    command:
+      - sbin/start-thriftserver.sh
+      - --driver-memory
+      # You may need to increase this if your queries/data are too large.
+      - 4g
+    environment:
+      - HIVE_SERVER2_THRIFT_PORT=10000
+      - "JAVA_OPTS=-Xms1024m -Xmx5024m"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 4G
+    ports:
+      - '10001:10000'
+      - '4041:4040'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=sigdep3_hie'
+      - 'traefik.http.routers.spark.tls=true'
+      - 'traefik.http.routers.spark.entrypoints=web-secure'
+      - 'traefik.http.services.spark.loadbalancer.server.port=4040'
+      - 'traefik.http.routers.spark.rule=Host(`tap-demo.openelisci.org`) && PathPrefix(`/spark`)' 
+      - 'traefik.http.services.spark.loadbalancer.server.scheme=http'
+      - 'traefik.http.routers.spark.service=spark'
+    volumes:
+      - ./configs/dwh:/dwh
+      # NON-EMBEDDED METASTORE CONFIG:
+      # If you want to persist the Metastore data, e.g., table and view
+      # definitions, you can use an external database by adjusting hive-site.xml
+      #- ./hive-site_example.xml:/opt/bitnami/spark/conf/hive-site.xml
+      # Note to use an external DB, you need to provide its driver jar too:
+      #- ./postgresql-42.6.0.jar:/opt/bitnami/spark/jars/postgresql-42.6.0.jar
+      - spark_vol_single:/opt/bitnami/spark
+    networks:
+      - frontend-network
+      - backend-network
+    healthcheck:
+      test: beeline help || exit 1
+      interval: 10s
+      retries: 10
+      start_period: 5s
+      timeout: 60s
+
 
 secrets:
   datasource.password:
@@ -333,7 +304,8 @@ volumes:
   key_trust-store-volume:
   certs-vol:
   certs:
-  keys-vol:       
+  keys-vol:
+  spark_vol_single:
 
 networks:
   hie:
