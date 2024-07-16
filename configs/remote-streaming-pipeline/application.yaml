@@ -27,8 +27,8 @@ fhirdata:
 
   # fhirServerUrl: "https://tap-demo.openelisci.org/openmrs/ws/fhir2/R4"
   #fhirServerUrl: "https://dev3.openmrs.org/openmrs/ws/fhir2/R4"
-  fhirServerUserName: "fhir"
-  fhirServerPassword: "password"
+  fhirServerUserName: "hapi"
+  fhirServerPassword: "hapi"
   #dbConfig: "config/hapi-postgres-config_local.json"
   dwhRootPrefix: "/dwh/controller_DWH"
   incrementalSchedule: "1 * * * * *"
@@ -44,13 +44,16 @@ fhirdata:
   autoGenerateFlinkConfiguration: true
   createHiveResourceTables: true
   createParquetDwh: true
-  thriftserverHiveConfig: "configs/remote-streaming-pipeline/thriftserver-hive-config_local.json"
-  hiveResourceViewsDir: "configs/remote-streaming-pipeline/views"
+  #thriftserverHiveConfig: "config/remote-streaming-pipeline/thriftserver-hive-config_local.json"
+  #hiveResourceViewsDir: "config/remote-streaming-pipeline/views"
+  thriftserverHiveConfig: "config/thriftserver-hive-config_local.json"
+  hiveResourceViewsDir: "config/views"
   #structureDefinitionsPath: "config/profile-definitions"
   structureDefinitionsPath: "classpath:/r4-us-core-definitions"
   fhirVersion: "R4"
   rowGroupSizeForParquetFiles: 33554432   # 32mb
-  viewDefinitionsDir: "configs/remote-streaming-pipeline/views"
+  #viewDefinitionsDir: "config/remote-streaming-pipeline/views"
+  viewDefinitionsDir: "config/views"
   #sinkDbConfigPath: "config/hapi-postgres-config_local_views.json"
   #Configure endpoint
   #sinkFhirServerUrl: "http://openhim-core:5001/fhir"

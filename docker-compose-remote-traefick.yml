@@ -107,7 +107,7 @@ services:
     container_name: openhim-config
     image: ghcr.io/i-tech-uw/openhim-config:v0.0.0
     volumes:
-      - ./configs/openhim/test-openhim-config.json:/app/test-openhim-config.json
+      - ./configs/openhim/remote-test-openhim-config.json:/app/test-openhim-config.json
     networks:
       - hie
 
@@ -283,8 +283,7 @@ services:
       #- ./postgresql-42.6.0.jar:/opt/bitnami/spark/jars/postgresql-42.6.0.jar
       - spark_vol_single:/opt/bitnami/spark
     networks:
-      - frontend-network
-      - backend-network
+      - hie
     healthcheck:
       test: beeline help || exit 1
       interval: 10s
