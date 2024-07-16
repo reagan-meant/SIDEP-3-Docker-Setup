@@ -81,6 +81,9 @@ ulimits:
 `    
 Follow the blog here: https://www.gitpod.io/blog/local-app to enable localhost on your machine
 
+Incase spark image is failing. Consider upgrading the docker engine.
+See [here](https://docs.docker.com/engine/install/ubuntu/#upgrade-docker-engine)
+
 ### Deploying with ansible to remote server
 Install ansible on the host machine following steps here https://docs.ansible.com/ansible/latest/installation_guide/installation_distros.html    
 Ensure the public key is already added to the remote server    
