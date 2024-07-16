@@ -97,8 +97,6 @@ services:
     depends_on:
       openhim-core:
         condition: service_healthy
-      opencr-fhir:
-        condition: service_started
     volumes:
       - ./configs/sigdep3/mysql.cnf:/etc/mysql/conf.d/custom.cnf  # mysql config preconfigured to allow binlog/debezium
       - ./configs/sigdep3/init-db:/docker-entrypoint-initdb.d

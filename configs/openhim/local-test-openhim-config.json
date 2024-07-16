@@ -1725,6 +1725,16 @@
       "passwordAlgorithm": "sha512",
       "passwordSalt": "020f609eef89ee2bb29b94089d717a9b",
       "passwordHash": "efb76c5b03d01b09c3e12216697c8d37d008f7246d186b155b1c1c772d0a0cc0f69f45512343c08ebca7c9bcb7caf3bdf9ff6dc54aa135bd3920c66e8119e553"
+    },
+    {
+      "roles": [
+        "shr"
+      ],
+      "clientID": "hapi",
+      "name": "hapi",
+      "passwordAlgorithm": "sha512",
+      "passwordSalt": "77c05e0d08e60f03d4d78ea2e7568e10",
+      "passwordHash": "07d7f8454f8e94ee159fea10182974bbcd8daeabbc3b7a9c86acae067ce30d6ce1a6b1516c614ba2fe47937d1f8ac19d3798e28a763059d360e074aed0e83a9f"
     }
   ],
   "Channels": [
@@ -1850,6 +1860,70 @@
         }
       ],
       "priority": 2
+    },
+    {
+      "updatedBy": {
+        "id": "6695097fb43c580013a524c8",
+        "name": "Super User"
+      },
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE",
+        "PUT",
+        "OPTIONS",
+        "HEAD",
+        "TRACE",
+        "CONNECT",
+        "PATCH"
+      ],
+      "type": "http",
+      "allow": [
+        "hapi",
+        "opencr"
+      ],
+      "whitelist": [],
+      "authType": "private",
+      "matchContentTypes": [],
+      "properties": [],
+      "txViewAcl": [],
+      "txViewFullAcl": [],
+      "txRerunAcl": [],
+      "status": "enabled",
+      "rewriteUrls": false,
+      "addAutoRewriteRules": true,
+      "autoRetryEnabled": false,
+      "autoRetryPeriodMinutes": 60,
+      "routes": [
+        {
+          "type": "http",
+          "status": "enabled",
+          "forwardAuthHeader": false,
+          "name": "Central FHIR server",
+          "secured": true,
+          "host": "test1.cihis.org",
+          "port": 443,
+          "path": "",
+          "pathTransform": "s/fhir/openhimcore\\/fhir/g",
+          "primary": true,
+          "username": "hapi",
+          "password": "hapi"
+        }
+      ],
+      "requestBody": true,
+      "responseBody": true,
+      "rewriteUrlsConfig": [],
+      "name": "central fhir server",
+      "description": "Access to the central FHIR server",
+      "pollingSchedule": null,
+      "matchContentRegex": null,
+      "matchContentXpath": null,
+      "matchContentValue": null,
+      "matchContentJson": null,
+      "urlPattern": "^/fhir.*$",
+      "tcpHost": null,
+      "tcpPort": null,
+      "alerts": []
     },
     {
       "updatedBy": {
