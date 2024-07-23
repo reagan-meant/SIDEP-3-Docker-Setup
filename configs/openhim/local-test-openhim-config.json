@@ -1901,7 +1901,7 @@
           "forwardAuthHeader": false,
           "name": "Central FHIR server",
           "secured": true,
-          "host": "test1.cihis.org",
+          "host": "dev.cihis.org",
           "port": 443,
           "path": "",
           "pathTransform": "s/fhir/openhimcore\\/fhir/g",
