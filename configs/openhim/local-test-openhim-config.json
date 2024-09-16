@@ -1776,7 +1776,7 @@
           "host": "test1.cihis.org",
           "port": 443,
           "path": "",
-          "pathTransform": "s/CR\/fhir\/matches/openhimcore\/CR\/fhir\/matches/g",
+          "pathTransform": "s/CR\\/fhir\\/matches/openhimcore\\/CR\\/fhir\\/matches/g",
           "primary": true,
           "username": "sigdep3",
           "password": "sigdep3"
@@ -1853,7 +1853,7 @@
           "host": "test1.cihis.org",
           "port": 443,
           "path": "",
-          "pathTransform": "s/CR\/fhir/openhimcore\/CR\/fhir/g",
+          "pathTransform": "s/CR\\/fhir/openhimcore\\/CR\\/fhir/g",
           "primary": true,
           "username": "sigdep3",
           "password": "sigdep3"
